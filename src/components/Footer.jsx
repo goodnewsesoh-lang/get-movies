@@ -16,7 +16,6 @@ export default function Footer() {
           <Link to="/movies" className="hover:text-bone">Movies</Link>
           <Link to="/tv-shows" className="hover:text-bone">TV Shows</Link>
           <Link to="/genres" className="hover:text-bone">Genres</Link>
-          <Link to="/admin/login" className="hover:text-bone">Admin</Link>
         </nav>
       </div>
       <div className="max-w-6xl mx-auto px-4 pb-8 text-xs text-mute">

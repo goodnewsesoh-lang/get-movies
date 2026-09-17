@@ -5,6 +5,7 @@ const links = [
   { to: '/admin', label: 'Dashboard', end: true },
   { to: '/admin/titles', label: 'Manage Titles' },
   { to: '/admin/titles/new', label: 'Add Title' },
+  { to: '/admin/collections', label: 'Collections' },
 ];
 
 export default function AdminLayout({ children }) {
@@ -46,4 +47,4 @@ export default function AdminLayout({ children }) {
       <div className="flex-1 min-w-0">{children}</div>
     </div>
   );
-   }
+}

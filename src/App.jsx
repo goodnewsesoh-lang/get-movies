@@ -42,6 +42,7 @@ export default function App() {
           <Route path="/admin/collections" element={<ProtectedRoute><Collections /></ProtectedRoute>} />
           <Route path="/admin/collections/new" element={<ProtectedRoute><CollectionForm /></ProtectedRoute>} />
           <Route path="/admin/collections/:id/edit" element={<ProtectedRoute><CollectionForm /></ProtectedRoute>} />
+          <Route path="/admin/home-order" element={<ProtectedRoute><HomeOrder /></ProtectedRoute>} />
         </Routes>
       </main>
       <Footer />

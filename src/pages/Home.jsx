@@ -19,14 +19,14 @@ export default function Home() {
         fetchHomepageCollections(),
       ]);
 
-      const builtInSections = await Promise.all(
-        builtIn.map(async (s) => {
-          const titles =
-            s.key === 'latest_movies'
-              ? await fetchTitles({ type: 'movie', sort: 'newest', limit: 12 })
-              : s.key === 'latest_tv'
-              ? await fetchTitles({ type: 'tv', sort: 'newest', limit: 12 })
-              : [];
+      const titles =
+  s.key === 'latest_movies'
+    ? await fetchTitles({ type: 'movie', sort: 'newest', limit: 12 })
+    : s.key === 'latest_tv'
+    ? await fetchTitles({ type: 'tv', sort: 'newest', limit: 12 })
+    : s.key === 'recommended'
+    ? await fetchTitles({ sort: 'rating', limit: 12 })
+    : [];
           return { kind: 'builtin', key: s.key, label: s.label, position: s.position, titles };
         })
       );

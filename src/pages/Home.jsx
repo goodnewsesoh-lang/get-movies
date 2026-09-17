@@ -4,44 +4,62 @@ import FeaturedCarousel from '../components/FeaturedCarousel.jsx';
 import TitleRow from '../components/TitleRow.jsx';
 import { fetchTitles } from '../lib/titles.js';
 import { fetchHomepageCollections, fetchCollectionItems } from '../lib/collections.js';
+import { fetchEnabledHomeSections } from '../lib/homeSections.js';
 
 export default function Home() {
   const [featured, setFeatured] = useState(null);
-  const [latestMovies, setLatestMovies] = useState(null);
-  const [latestTv, setLatestTv] = useState(null);
-  const [collections, setCollections] = useState([]);
-  const [collectionTitles, setCollectionTitles] = useState({});
+  const [sections, setSections] = useState(null);
 
   useEffect(() => {
     fetchTitles({ featuredOnly: true, limit: 10 }).then(setFeatured);
-    fetchTitles({ type: 'movie', sort: 'newest', limit: 12 }).then(setLatestMovies);
-    fetchTitles({ type: 'tv', sort: 'newest', limit: 12 }).then(setLatestTv);
 
-    fetchHomepageCollections().then(async (cols) => {
-      setCollections(cols);
-      const entries = await Promise.all(
-        cols.map(async (c) => [c.id, await fetchCollectionItems(c.id, 12)])
+    (async () => {
+      const [builtIn, collections] = await Promise.all([
+        fetchEnabledHomeSections(),
+        fetchHomepageCollections(),
+      ]);
+
+      const builtInSections = await Promise.all(
+        builtIn.map(async (s) => {
+          const titles =
+            s.key === 'latest_movies'
+              ? await fetchTitles({ type: 'movie', sort: 'newest', limit: 12 })
+              : s.key === 'latest_tv'
+              ? await fetchTitles({ type: 'tv', sort: 'newest', limit: 12 })
+              : [];
+          return { kind: 'builtin', key: s.key, label: s.label, position: s.position, titles };
+        })
       );
-      setCollectionTitles(Object.fromEntries(entries));
-    });
+
+      const collectionSections = await Promise.all(
+        collections.map(async (c) => ({
+          kind: 'collection',
+          key: c.id,
+          label: c.name,
+          slug: c.slug,
+          position: c.homepage_order,
+          titles: await fetchCollectionItems(c.id, 12),
+        }))
+      );
+
+      setSections(
+        [...builtInSections, ...collectionSections].sort((a, b) => a.position - b.position)
+      );
+    })();
   }, []);
 
   return (
     <div>
       {featured && featured.length > 0 && <FeaturedCarousel titles={featured} />}
 
-      <TitleRow heading="Latest Movies" titles={latestMovies} />
-      <TitleRow heading="Latest TV Shows" titles={latestTv} />
-
-      {collections.map((c) => {
-        const titles = collectionTitles[c.id];
-        if (titles && titles.length === 0) return null;
+      {sections?.map((s) => {
+        if (s.titles.length === 0) return null;
         return (
-          <div key={c.id}>
-            <TitleRow heading={c.name} titles={titles ?? null} />
-            {titles && titles.length > 0 && (
+          <div key={s.key}>
+            <TitleRow heading={s.label} titles={s.titles} />
+            {s.kind === 'collection' && (
               <div className="max-w-6xl mx-auto px-4 -mt-6 pb-6">
-                <Link to={`/collections/${c.slug}`} className="text-sm text-violet-bright hover:underline">
+                <Link to={`/collections/${s.slug}`} className="text-sm text-violet-bright hover:underline">
                   View more →
                 </Link>
               </div>
@@ -66,4 +84,4 @@ export default function Home() {
       </section>
     </div>
   );
-}
+  }

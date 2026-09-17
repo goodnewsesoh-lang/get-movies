@@ -19,14 +19,16 @@ export default function Home() {
         fetchHomepageCollections(),
       ]);
 
-      const titles =
-  s.key === 'latest_movies'
-    ? await fetchTitles({ type: 'movie', sort: 'newest', limit: 12 })
-    : s.key === 'latest_tv'
-    ? await fetchTitles({ type: 'tv', sort: 'newest', limit: 12 })
-    : s.key === 'recommended'
-    ? await fetchTitles({ sort: 'rating', limit: 12 })
-    : [];
+      const builtInSections = await Promise.all(
+        builtIn.map(async (s) => {
+          let titles = [];
+          if (s.key === 'latest_movies') {
+            titles = await fetchTitles({ type: 'movie', sort: 'newest', limit: 12 });
+          } else if (s.key === 'latest_tv') {
+            titles = await fetchTitles({ type: 'tv', sort: 'newest', limit: 12 });
+          } else if (s.key === 'recommended') {
+            titles = await fetchTitles({ sort: 'rating', limit: 12 });
+          }
           return { kind: 'builtin', key: s.key, label: s.label, position: s.position, titles };
         })
       );
@@ -84,4 +86,4 @@ export default function Home() {
       </section>
     </div>
   );
-  }
+}

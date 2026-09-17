@@ -17,6 +17,7 @@ import ManageTitles from './pages/admin/ManageTitles.jsx';
 import TitleForm from './pages/admin/TitleForm.jsx';
 import Collections from './pages/admin/Collections.jsx';
 import CollectionForm from './pages/admin/CollectionForm.jsx';
+import HomeOrder from './pages/admin/HomeOrder.jsx';
 
 export default function App() {
   return (

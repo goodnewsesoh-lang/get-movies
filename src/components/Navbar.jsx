@@ -24,8 +24,8 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-40 bg-ink/90 backdrop-blur border-b border-line">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
-        <Link to="/" className="font-display text-xl font-semibold text-bone shrink-0">
-          Get <span className="text-violet-bright">Movies</span>
+        <Link to="/" className="shrink-0">
+           <img src="/logo-full.png" alt="Get Movies" className="h-10 w-auto" />
         </Link>
 
         <nav className="hidden md:flex items-center gap-6">

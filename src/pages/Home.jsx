@@ -1,80 +1,54 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import FeaturedCarousel from '../components/FeaturedCarousel.jsx';
 import TitleRow from '../components/TitleRow.jsx';
-import TrailerModal from '../components/TrailerModal.jsx';
 import { fetchTitles } from '../lib/titles.js';
+import { fetchHomepageCollections, fetchCollectionItems } from '../lib/collections.js';
 
 export default function Home() {
   const [featured, setFeatured] = useState(null);
   const [latestMovies, setLatestMovies] = useState(null);
   const [latestTv, setLatestTv] = useState(null);
-  const [recommended, setRecommended] = useState(null);
-  const [showTrailer, setShowTrailer] = useState(false);
+  const [collections, setCollections] = useState([]);
+  const [collectionTitles, setCollectionTitles] = useState({});
 
   useEffect(() => {
-    fetchTitles({ featuredOnly: true, limit: 1 }).then((r) => setFeatured(r[0] ?? null));
+    fetchTitles({ featuredOnly: true, limit: 10 }).then(setFeatured);
     fetchTitles({ type: 'movie', sort: 'newest', limit: 12 }).then(setLatestMovies);
     fetchTitles({ type: 'tv', sort: 'newest', limit: 12 }).then(setLatestTv);
-    fetchTitles({ sort: 'rating', limit: 12 }).then(setRecommended);
+
+    fetchHomepageCollections().then(async (cols) => {
+      setCollections(cols);
+      const entries = await Promise.all(
+        cols.map(async (c) => [c.id, await fetchCollectionItems(c.id, 12)])
+      );
+      setCollectionTitles(Object.fromEntries(entries));
+    });
   }, []);
 
   return (
     <div>
-      {featured && (
-        <section className="relative min-h-[70vh] flex items-end overflow-hidden">
-          {featured.backdrop_url && (
-            <img
-              src={featured.backdrop_url}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/60 to-ink/10" />
-          <div className="absolute inset-0 bg-gradient-to-r from-ink/80 via-ink/20 to-transparent" />
-
-          <div className="relative max-w-6xl mx-auto px-4 pb-14 flex flex-col md:flex-row gap-6 items-end">
-            {featured.poster_url && (
-              <img
-                src={featured.poster_url}
-                alt={featured.title}
-                className="hidden md:block w-44 rounded-xl border border-line shadow-glow"
-              />
-            )}
-            <div className="max-w-xl">
-              <p className="text-violet-bright text-xs font-medium tracking-wide mb-2">Featured</p>
-              <h1 className="font-display text-4xl md:text-5xl text-bone leading-tight">
-                {featured.title}
-              </h1>
-              <p className="text-mute mt-3 text-sm">
-                {featured.year}
-                {featured.rating != null ? ` · ★ ${featured.rating}` : ''}
-                {featured.genres?.length ? ` · ${featured.genres.slice(0, 3).join(', ')}` : ''}
-              </p>
-              <p className="text-bone/90 mt-4 line-clamp-3">{featured.overview}</p>
-              <div className="flex gap-3 mt-6">
-                {featured.trailer_url && (
-                  <button
-                    onClick={() => setShowTrailer(true)}
-                    className="bg-violet hover:bg-violet-bright transition-colors text-bone px-5 py-2.5 rounded-lg text-sm font-medium"
-                  >
-                    Watch trailer
-                  </button>
-                )}
-                <Link
-                  to={`/title/${featured.id}`}
-                  className="bg-panel hover:bg-panel2 border border-line transition-colors text-bone px-5 py-2.5 rounded-lg text-sm font-medium"
-                >
-                  View details
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
+      {featured && featured.length > 0 && <FeaturedCarousel titles={featured} />}
 
       <TitleRow heading="Latest Movies" titles={latestMovies} />
       <TitleRow heading="Latest TV Shows" titles={latestTv} />
-      <TitleRow heading="Recommended For You" titles={recommended} />
+
+      {collections.map((c) => {
+        const titles = collectionTitles[c.id];
+        if (titles && titles.length === 0) return null;
+        return (
+          <div key={c.id}>
+            <TitleRow heading={c.name} titles={titles ?? null} />
+            {titles && titles.length > 0 && (
+              <div className="max-w-6xl mx-auto px-4 -mt-6 pb-6">
+                <Link to={`/collections/${c.slug}`} className="text-sm text-violet-bright hover:underline">
+                  View more →
+                </Link>
+              </div>
+            )}
+          </div>
+        );
+      })}
 
       <section className="max-w-6xl mx-auto px-4 py-8">
         <h2 className="font-display text-2xl text-bone mb-4">Browse by Genre</h2>
@@ -90,10 +64,6 @@ export default function Home() {
           ))}
         </div>
       </section>
-
-      {showTrailer && featured?.trailer_url && (
-        <TrailerModal url={featured.trailer_url} onClose={() => setShowTrailer(false)} />
-      )}
     </div>
   );
 }

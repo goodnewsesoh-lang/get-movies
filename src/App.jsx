@@ -10,6 +10,10 @@ import GenreDetail from './pages/GenreDetail.jsx';
 import Search from './pages/Search.jsx';
 import TitleDetails from './pages/TitleDetails.jsx';
 import CollectionDetail from './pages/CollectionDetail.jsx';
+import Announcements from './pages/Announcements.jsx';
+import AnnouncementDetail from './pages/AnnouncementDetail.jsx';
+import About from './pages/About.jsx';
+import Contact from './pages/Contact.jsx';
 
 import AdminLogin from './pages/admin/Login.jsx';
 import AdminDashboard from './pages/admin/Dashboard.jsx';
@@ -18,6 +22,9 @@ import TitleForm from './pages/admin/TitleForm.jsx';
 import Collections from './pages/admin/Collections.jsx';
 import CollectionForm from './pages/admin/CollectionForm.jsx';
 import HomeOrder from './pages/admin/HomeOrder.jsx';
+import AdminAnnouncements from './pages/admin/Announcements.jsx';
+import AnnouncementForm from './pages/admin/AnnouncementForm.jsx';
+import Settings from './pages/admin/Settings.jsx';
 
 export default function App() {
   return (
@@ -33,6 +40,10 @@ export default function App() {
           <Route path="/search" element={<Search />} />
           <Route path="/title/:id" element={<TitleDetails />} />
           <Route path="/collections/:slug" element={<CollectionDetail />} />
+          <Route path="/announcements" element={<Announcements />} />
+          <Route path="/announcements/:slug" element={<AnnouncementDetail />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
 
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
@@ -43,9 +54,13 @@ export default function App() {
           <Route path="/admin/collections/new" element={<ProtectedRoute><CollectionForm /></ProtectedRoute>} />
           <Route path="/admin/collections/:id/edit" element={<ProtectedRoute><CollectionForm /></ProtectedRoute>} />
           <Route path="/admin/home-order" element={<ProtectedRoute><HomeOrder /></ProtectedRoute>} />
+          <Route path="/admin/announcements" element={<ProtectedRoute><AdminAnnouncements /></ProtectedRoute>} />
+          <Route path="/admin/announcements/new" element={<ProtectedRoute><AnnouncementForm /></ProtectedRoute>} />
+          <Route path="/admin/announcements/:id/edit" element={<ProtectedRoute><AnnouncementForm /></ProtectedRoute>} />
+          <Route path="/admin/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         </Routes>
       </main>
       <Footer />
     </div>
   );
-  }
+}

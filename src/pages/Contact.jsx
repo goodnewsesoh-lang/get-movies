@@ -22,14 +22,8 @@ export default function Contact() {
       {methods.length === 0 && <p className="text-mute text-sm">Contact details coming soon.</p>}
 
       <div className="space-y-3">
-       {methods.map((m) => (
-            
-              key={m.label}
-            href={m.href}
-            target="_blank"
-            rel="noreferrer"
-            className="block bg-panel border border-line rounded-lg px-4 py-3 hover:border-violet/60 transition-colors"
-          >
+        {methods.map((m) => (
+          <a key={m.label} href={m.href} target="_blank" rel="noreferrer" className="block bg-panel border border-line rounded-lg px-4 py-3 hover:border-violet/60 transition-colors">
             <span className="text-mute text-xs">{m.label}</span>
             <p className="text-bone text-sm">{m.value}</p>
           </a>

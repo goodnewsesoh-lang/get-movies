@@ -22,9 +22,9 @@ export default function Contact() {
       {methods.length === 0 && <p className="text-mute text-sm">Contact details coming soon.</p>}
 
       <div className="space-y-3">
-        {methods.map((m) => (
-          
-            key={m.label}
+       {methods.map((m) => (
+            
+              key={m.label}
             href={m.href}
             target="_blank"
             rel="noreferrer"

@@ -7,6 +7,8 @@ const links = [
   { to: '/admin/titles/new', label: 'Add Title' },
   { to: '/admin/collections', label: 'Collections' },
   { to: '/admin/home-order', label: 'Homepage Order' },
+  { to: '/admin/announcements', label: 'Announcements' },
+  { to: '/admin/settings', label: 'Settings' },
 ];
 
 export default function AdminLayout({ children }) {

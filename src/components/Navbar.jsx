@@ -6,6 +6,9 @@ const links = [
   { to: '/movies', label: 'Movies' },
   { to: '/tv-shows', label: 'TV Shows' },
   { to: '/genres', label: 'Genres' },
+  { to: '/announcements', label: 'Announcements' },
+  { to: '/about', label: 'About' },
+  { to: '/contact', label: 'Contact' },
 ];
 
 export default function Navbar() {
@@ -25,10 +28,10 @@ export default function Navbar() {
     <header className="sticky top-0 z-40 bg-ink/90 backdrop-blur border-b border-line">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
         <Link to="/" className="shrink-0">
-           <img src="/logo-full.png" alt="Get Movies" className="h-10 w-auto" />
+          <img src="/logo-full.png" alt="Get Movies" className="h-10 w-auto" />
         </Link>
 
-        <nav className="hidden md:flex items-center gap-6">
+        <nav className="hidden lg:flex items-center gap-5">
           {links.map((l) => (
             <NavLink
               key={l.to}
@@ -42,7 +45,7 @@ export default function Navbar() {
           ))}
         </nav>
 
-        <form onSubmit={submitSearch} className="hidden md:block relative">
+        <form onSubmit={submitSearch} className="hidden lg:block relative">
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -54,7 +57,7 @@ export default function Navbar() {
 
         <button
           onClick={() => setOpen((v) => !v)}
-          className="md:hidden text-bone p-2 -mr-2"
+          className="lg:hidden text-bone p-2 -mr-2"
           aria-label="Toggle menu"
           aria-expanded={open}
         >
@@ -69,7 +72,7 @@ export default function Navbar() {
       </div>
 
       {open && (
-        <div className="md:hidden border-t border-line px-4 py-4 space-y-4 bg-ink">
+        <div className="lg:hidden border-t border-line px-4 py-4 space-y-4 bg-ink">
           <form onSubmit={submitSearch}>
             <input
               value={query}
@@ -97,4 +100,4 @@ export default function Navbar() {
       )}
     </header>
   );
-  }
+}

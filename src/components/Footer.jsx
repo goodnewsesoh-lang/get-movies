@@ -19,32 +19,18 @@ export default function Footer() {
     fetchSiteSettings().then(setSettings).catch(() => {});
   }, []);
 
-  const activeSocials = settings
-    ? Object.entries(socialIcons).filter(([key]) => settings[key])
-    : [];
+  const activeSocials = settings ? Object.entries(socialIcons).filter(([key]) => settings[key]) : [];
 
   return (
     <footer className="border-t border-line mt-16">
       <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col md:flex-row md:items-start md:justify-between gap-8">
         <div>
-          <p className="font-display text-lg font-semibold text-bone">
-            Get <span className="text-violet-bright">Movies</span>
-          </p>
-          <p className="text-sm text-mute mt-2 max-w-xs">
-            Bringing you latest movie updates and recommendations.
-          </p>
+          <p className="font-display text-lg font-semibold text-bone">Get <span className="text-violet-bright">Movies</span></p>
+          <p className="text-sm text-mute mt-2 max-w-xs">Bringing you latest movie updates and recommendations.</p>
           {activeSocials.length > 0 && (
             <div className="flex flex-wrap gap-3 mt-4">
               {activeSocials.map(([key, label]) => (
-                
-                  key={key}
-                  href={settings[key]}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs text-mute hover:text-violet-bright border border-line rounded-full px-3 py-1"
-                >
-                  {label}
-                </a>
+                <a key={key} href={settings[key]} target="_blank" rel="noreferrer" className="text-xs text-mute hover:text-violet-bright border border-line rounded-full px-3 py-1">{label}</a>
               ))}
             </div>
           )}
@@ -58,9 +44,7 @@ export default function Footer() {
           <Link to="/contact" className="hover:text-bone">Contact</Link>
         </nav>
       </div>
-      <div className="max-w-6xl mx-auto px-4 pb-8 text-xs text-mute">
-        © {new Date().getFullYear()} Get Movies. All rights reserved.
-      </div>
+      <div className="max-w-6xl mx-auto px-4 pb-8 text-xs text-mute">© {new Date().getFullYear()} Get Movies. All rights reserved.</div>
     </footer>
   );
 }

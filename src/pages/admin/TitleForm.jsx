@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import AdminLayout from '../../components/AdminLayout.jsx';
-import { searchTmdb, getTmdbGenres, mapTmdbResultToDraft, tmdbPosterUrl } from '../../lib/tmdb.js';
+import GalleryManager from '../../components/GalleryManager.jsx';
+import SimilarTitlesPicker from '../../components/SimilarTitlesPicker.jsx';
+import {
+  searchTmdb,
+  getTmdbGenres,
+  mapTmdbResultToDraft,
+  tmdbPosterUrl,
+  fetchTmdbExtras,
+} from '../../lib/tmdb.js';
 import { createTitle, updateTitle, fetchTitleById, uploadImage } from '../../lib/titles.js';
 
 const emptyForm = {
@@ -18,6 +26,13 @@ const emptyForm = {
   trailer_url: '',
   featured: false,
   published: true,
+  tmdb_id: null,
+  runtime: '',
+  director: '',
+  country: '',
+  languages: [],
+  writers: [],
+  producers: [],
 };
 
 export default function TitleForm() {
@@ -30,13 +45,25 @@ export default function TitleForm() {
   const [tmdbQuery, setTmdbQuery] = useState('');
   const [tmdbResults, setTmdbResults] = useState([]);
   const [tmdbGenreLookup, setTmdbGenreLookup] = useState({});
+  const [galleryFromTmdb, setGalleryFromTmdb] = useState([]);
+  const [loadingExtras, setLoadingExtras] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [uploading, setUploading] = useState(null);
 
   useEffect(() => {
     if (isEdit) {
-      fetchTitleById(id).then((t) => setForm({ ...emptyForm, ...t, rating: t.rating ?? '' }));
+      fetchTitleById(id).then((t) =>
+        setForm({
+          ...emptyForm,
+          ...t,
+          rating: t.rating ?? '',
+          runtime: t.runtime ?? '',
+          languages: t.languages ?? [],
+          writers: t.writers ?? [],
+          producers: t.producers ?? [],
+        })
+      );
     }
   }, [id, isEdit]);
 
@@ -61,11 +88,30 @@ export default function TitleForm() {
     }
   };
 
-  const applyTmdbResult = (result) => {
+  const applyTmdbResult = async (result) => {
     const draft = mapTmdbResultToDraft(result, form.type, tmdbGenreLookup);
     setForm((f) => ({ ...f, ...draft }));
     setTmdbResults([]);
     setTmdbQuery('');
+
+    setLoadingExtras(true);
+    try {
+      const extras = await fetchTmdbExtras(result.id, form.type);
+      setForm((f) => ({
+        ...f,
+        runtime: extras.runtime ?? '',
+        director: extras.director ?? '',
+        country: extras.country ?? '',
+        languages: extras.languages ?? [],
+        writers: extras.writers ?? [],
+        producers: extras.producers ?? [],
+      }));
+      setGalleryFromTmdb(extras.galleryImages ?? []);
+    } catch {
+      // extras are a bonus, don't block the form if they fail
+    } finally {
+      setLoadingExtras(false);
+    }
   };
 
   const addGenre = () => {
@@ -102,12 +148,15 @@ export default function TitleForm() {
       ...form,
       year: form.year ? Number(form.year) : null,
       rating: form.rating === '' ? null : Number(form.rating),
+      runtime: form.runtime === '' ? null : Number(form.runtime),
     };
     try {
       if (isEdit) {
         await updateTitle(id, payload);
       } else {
-        await createTitle(payload);
+        const created = await createTitle(payload);
+        navigate(`/admin/titles/${created.id}/edit`);
+        return;
       }
       navigate('/admin/titles');
     } catch (err) {
@@ -143,15 +192,12 @@ export default function TitleForm() {
           </button>
         </form>
 
+        {loadingExtras && <p className="text-xs text-violet-bright mt-2">Fetching extra details…</p>}
+
         {tmdbResults.length > 0 && (
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mt-4">
             {tmdbResults.map((r) => (
-              <button
-                type="button"
-                key={r.id}
-                onClick={() => applyTmdbResult(r)}
-                className="text-left"
-              >
+              <button type="button" key={r.id} onClick={() => applyTmdbResult(r)} className="text-left">
                 <img
                   src={tmdbPosterUrl(r.poster_path, 'w200')}
                   alt=""
@@ -166,7 +212,7 @@ export default function TitleForm() {
 
       {error && <p className="text-sm text-red-400 mb-4">{error}</p>}
 
-      <form onSubmit={submit} className="space-y-5 max-w-2xl">
+      <form onSubmit={submit} className="space-y-5 max-w-2xl mb-10">
         <div>
           <label className="block text-sm text-mute mb-1">Title</label>
           <input
@@ -193,6 +239,64 @@ export default function TitleForm() {
               type="date"
               value={form.release_date || ''}
               onChange={(e) => setForm((f) => ({ ...f, release_date: e.target.value }))}
+              className="w-full bg-panel border border-line rounded-lg px-3 py-2 text-bone"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm text-mute mb-1">Runtime (minutes)</label>
+            <input
+              type="number"
+              value={form.runtime}
+              onChange={(e) => setForm((f) => ({ ...f, runtime: e.target.value }))}
+              className="w-full bg-panel border border-line rounded-lg px-3 py-2 text-bone"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-mute mb-1">Director</label>
+            <input
+              value={form.director || ''}
+              onChange={(e) => setForm((f) => ({ ...f, director: e.target.value }))}
+              className="w-full bg-panel border border-line rounded-lg px-3 py-2 text-bone"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm text-mute mb-1">Country</label>
+            <input
+              value={form.country || ''}
+              onChange={(e) => setForm((f) => ({ ...f, country: e.target.value }))}
+              className="w-full bg-panel border border-line rounded-lg px-3 py-2 text-bone"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-mute mb-1">Languages (comma separated)</label>
+            <input
+              value={(form.languages || []).join(', ')}
+              onChange={(e) => setForm((f) => ({ ...f, languages: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) }))}
+              className="w-full bg-panel border border-line rounded-lg px-3 py-2 text-bone"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm text-mute mb-1">Writers (comma separated)</label>
+            <input
+              value={(form.writers || []).join(', ')}
+              onChange={(e) => setForm((f) => ({ ...f, writers: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) }))}
+              className="w-full bg-panel border border-line rounded-lg px-3 py-2 text-bone"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-mute mb-1">Producers (comma separated)</label>
+            <input
+              value={(form.producers || []).join(', ')}
+              onChange={(e) => setForm((f) => ({ ...f, producers: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) }))}
               className="w-full bg-panel border border-line rounded-lg px-3 py-2 text-bone"
             />
           </div>
@@ -305,6 +409,13 @@ export default function TitleForm() {
           {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Add title'}
         </button>
       </form>
+
+      {isEdit && (
+        <div className="max-w-2xl space-y-10">
+          <GalleryManager movieId={Number(id)} tmdbSuggestions={galleryFromTmdb} />
+          <SimilarTitlesPicker movieId={Number(id)} tmdbId={form.tmdb_id} type={form.type} />
+        </div>
+      )}
     </AdminLayout>
   );
   }

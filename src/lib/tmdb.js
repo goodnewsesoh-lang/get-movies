@@ -34,11 +34,10 @@ export function tmdbBackdropUrl(path, size = 'original') {
 
 export function mapTmdbResultToDraft(result, type, genreLookup) {
   const genreIds = result.genre_ids ?? [];
-  const genreNames = genreIds
-    .map((id) => genreLookup?.[id])
-    .filter(Boolean);
+  const genreNames = genreIds.map((id) => genreLookup?.[id]).filter(Boolean);
 
   return {
+    tmdb_id: result.id,
     title: type === 'tv' ? result.name : result.title,
     year: (type === 'tv' ? result.first_air_date : result.release_date)?.slice(0, 4) ?? '',
     release_date: type === 'tv' ? result.first_air_date : result.release_date ?? '',
@@ -48,4 +47,44 @@ export function mapTmdbResultToDraft(result, type, genreLookup) {
     poster_url: tmdbPosterUrl(result.poster_path),
     backdrop_url: tmdbBackdropUrl(result.backdrop_path),
   };
+}
+
+// Fetches director, writers, producers, runtime, country, languages, and extra backdrop images.
+// Called after a title is picked from search, using its TMDB id.
+export async function fetchTmdbExtras(tmdbId, type = 'movie') {
+  const endpoint = type === 'tv' ? 'tv' : 'movie';
+  const [detailsRes, creditsRes, imagesRes] = await Promise.all([
+    fetch(`${BASE_URL}/${endpoint}/${tmdbId}`, { headers }),
+    fetch(`${BASE_URL}/${endpoint}/${tmdbId}/credits`, { headers }),
+    fetch(`${BASE_URL}/${endpoint}/${tmdbId}/images`, { headers }),
+  ]);
+  if (!detailsRes.ok) throw new Error('TMDB details fetch failed');
+
+  const details = await detailsRes.json();
+  const credits = creditsRes.ok ? await creditsRes.json() : { crew: [] };
+  const images = imagesRes.ok ? await imagesRes.json() : { backdrops: [] };
+
+  const crew = credits.crew ?? [];
+  const director = crew.find((c) => c.job === 'Director')?.name ?? null;
+  const writers = crew.filter((c) => c.department === 'Writing').map((c) => c.name);
+  const producers = crew.filter((c) => c.job === 'Producer').map((c) => c.name);
+
+  return {
+    runtime: details.runtime ?? details.episode_run_time?.[0] ?? null,
+    country: details.production_countries?.[0]?.name ?? null,
+    languages: details.spoken_languages?.map((l) => l.english_name).filter(Boolean) ?? [],
+    director,
+    writers,
+    producers,
+    galleryImages: (images.backdrops ?? []).slice(0, 8).map((b) => tmdbBackdropUrl(b.file_path)),
+  };
+}
+
+// Fetches TMDB's "similar titles" list for suggesting matches against your own library.
+export async function fetchTmdbSimilar(tmdbId, type = 'movie') {
+  const endpoint = type === 'tv' ? 'tv' : 'movie';
+  const res = await fetch(`${BASE_URL}/${endpoint}/${tmdbId}/similar`, { headers });
+  if (!res.ok) throw new Error('TMDB similar fetch failed');
+  const data = await res.json();
+  return data.results ?? [];
   }

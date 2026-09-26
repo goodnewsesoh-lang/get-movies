@@ -10,7 +10,7 @@ export default function TitleRow({ heading, titles }) {
       {titles && titles.length > 0 && (
         <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 snap-x">
           {titles.map((t) => (
-            <div key={t.id} className="w-36 sm:w-44 shrink-0 snap-start">
+            <div key={t.id} className="w-32 sm:w-40 md:w-44 shrink-0 snap-start">
               <TitleCard title={t} />
             </div>
           ))}

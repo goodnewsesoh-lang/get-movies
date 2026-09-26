@@ -7,6 +7,7 @@ export default function ManageTitles() {
   const [titles, setTitles] = useState(null);
   const [query, setQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
+  const [featuredFilter, setFeaturedFilter] = useState('');
   const [confirmId, setConfirmId] = useState(null);
 
   const load = () => fetchAllTitlesForAdmin().then(setTitles);
@@ -29,7 +30,9 @@ export default function ManageTitles() {
   const filtered = (titles ?? []).filter((t) => {
     const matchesQuery = t.title.toLowerCase().includes(query.toLowerCase());
     const matchesType = !typeFilter || t.type === typeFilter;
-    return matchesQuery && matchesType;
+    const matchesFeatured =
+      !featuredFilter || (featuredFilter === 'featured' ? t.featured : !t.featured);
+    return matchesQuery && matchesType && matchesFeatured;
   });
 
   return (
@@ -50,6 +53,15 @@ export default function ManageTitles() {
           <option value="">All types</option>
           <option value="movie">Movies</option>
           <option value="tv">TV Shows</option>
+        </select>
+        <select
+          value={featuredFilter}
+          onChange={(e) => setFeaturedFilter(e.target.value)}
+          className="bg-panel border border-line rounded-lg px-3 py-2 text-sm text-bone"
+        >
+          <option value="">All titles</option>
+          <option value="featured">Featured only</option>
+          <option value="not-featured">Not featured</option>
         </select>
       </div>
 
@@ -128,4 +140,4 @@ export default function ManageTitles() {
       )}
     </AdminLayout>
   );
-        }
+}

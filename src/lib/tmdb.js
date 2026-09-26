@@ -49,25 +49,33 @@ export function mapTmdbResultToDraft(result, type, genreLookup) {
   };
 }
 
-// Fetches director, writers, producers, runtime, country, languages, and extra backdrop images.
-// Called after a title is picked from search, using its TMDB id.
+// Fetches director, writers, producers, runtime, country, languages, extra backdrop images, and a trailer URL.
 export async function fetchTmdbExtras(tmdbId, type = 'movie') {
   const endpoint = type === 'tv' ? 'tv' : 'movie';
-  const [detailsRes, creditsRes, imagesRes] = await Promise.all([
+  const [detailsRes, creditsRes, imagesRes, videosRes] = await Promise.all([
     fetch(`${BASE_URL}/${endpoint}/${tmdbId}`, { headers }),
     fetch(`${BASE_URL}/${endpoint}/${tmdbId}/credits`, { headers }),
     fetch(`${BASE_URL}/${endpoint}/${tmdbId}/images`, { headers }),
+    fetch(`${BASE_URL}/${endpoint}/${tmdbId}/videos`, { headers }),
   ]);
   if (!detailsRes.ok) throw new Error('TMDB details fetch failed');
 
   const details = await detailsRes.json();
   const credits = creditsRes.ok ? await creditsRes.json() : { crew: [] };
   const images = imagesRes.ok ? await imagesRes.json() : { backdrops: [] };
+  const videos = videosRes.ok ? await videosRes.json() : { results: [] };
 
   const crew = credits.crew ?? [];
   const director = crew.find((c) => c.job === 'Director')?.name ?? null;
   const writers = crew.filter((c) => c.department === 'Writing').map((c) => c.name);
   const producers = crew.filter((c) => c.job === 'Producer').map((c) => c.name);
+
+  const results = videos.results ?? [];
+  const trailer =
+    results.find((v) => v.site === 'YouTube' && v.type === 'Trailer' && v.official) ??
+    results.find((v) => v.site === 'YouTube' && v.type === 'Trailer') ??
+    results.find((v) => v.site === 'YouTube');
+  const trailerUrl = trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : null;
 
   return {
     runtime: details.runtime ?? details.episode_run_time?.[0] ?? null,
@@ -77,6 +85,7 @@ export async function fetchTmdbExtras(tmdbId, type = 'movie') {
     writers,
     producers,
     galleryImages: (images.backdrops ?? []).slice(0, 8).map((b) => tmdbBackdropUrl(b.file_path)),
+    trailerUrl,
   };
 }
 
@@ -87,4 +96,4 @@ export async function fetchTmdbSimilar(tmdbId, type = 'movie') {
   if (!res.ok) throw new Error('TMDB similar fetch failed');
   const data = await res.json();
   return data.results ?? [];
-  }
+                                             }

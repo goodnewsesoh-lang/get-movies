@@ -18,7 +18,7 @@ export default function FeaturedCarousel({ titles }) {
   const featured = titles[index];
 
   return (
-    <section className="relative min-h-[70vh] flex items-end overflow-hidden">
+    <section className="relative min-h-[46vh] sm:min-h-[55vh] md:min-h-[70vh] flex items-end overflow-hidden">
       {featured.backdrop_url && (
         <img
           key={featured.id}
@@ -30,7 +30,7 @@ export default function FeaturedCarousel({ titles }) {
       <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/60 to-ink/10" />
       <div className="absolute inset-0 bg-gradient-to-r from-ink/80 via-ink/20 to-transparent" />
 
-      <div className="relative max-w-6xl mx-auto px-4 pb-14 flex flex-col md:flex-row gap-6 items-end w-full">
+      <div className="relative max-w-6xl mx-auto px-4 pb-6 sm:pb-10 md:pb-14 flex flex-col md:flex-row gap-4 md:gap-6 items-end w-full">
         {featured.poster_url && (
           <img
             src={featured.poster_url}
@@ -39,40 +39,40 @@ export default function FeaturedCarousel({ titles }) {
           />
         )}
         <div className="max-w-xl flex-1">
-          <p className="text-violet-bright text-xs font-medium tracking-wide mb-2">Featured</p>
-          <h1 className="font-display text-4xl md:text-5xl text-bone leading-tight">{featured.title}</h1>
-          <p className="text-mute mt-3 text-sm">
+          <p className="text-violet-bright text-[11px] sm:text-xs font-medium tracking-wide mb-1.5 sm:mb-2">Featured</p>
+          <h1 className="font-display text-2xl sm:text-3xl md:text-5xl text-bone leading-tight">{featured.title}</h1>
+          <p className="text-mute mt-2 sm:mt-3 text-xs sm:text-sm">
             {featured.year}
             {featured.rating != null ? ` · ★ ${featured.rating}` : ''}
             {featured.genres?.length ? ` · ${featured.genres.slice(0, 3).join(', ')}` : ''}
           </p>
-          <p className="text-bone/90 mt-4 line-clamp-3">{featured.overview}</p>
-          <div className="flex gap-3 mt-6">
+          <p className="text-bone/90 mt-2 sm:mt-4 line-clamp-2 sm:line-clamp-3 text-sm sm:text-base">{featured.overview}</p>
+          <div className="flex gap-2 sm:gap-3 mt-3 sm:mt-6">
             {featured.trailer_url && (
               <button
                 onClick={() => setShowTrailer(true)}
-                className="bg-violet hover:bg-violet-bright transition-colors text-bone px-5 py-2.5 rounded-lg text-sm font-medium"
+                className="bg-violet hover:bg-violet-bright transition-colors text-bone px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium"
               >
                 Watch trailer
               </button>
             )}
             <Link
               to={`/title/${featured.id}`}
-              className="bg-panel hover:bg-panel2 border border-line transition-colors text-bone px-5 py-2.5 rounded-lg text-sm font-medium"
+              className="bg-panel hover:bg-panel2 border border-line transition-colors text-bone px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium"
             >
               View details
             </Link>
           </div>
 
           {titles.length > 1 && (
-            <div className="flex gap-2 mt-8">
+            <div className="flex gap-1.5 sm:gap-2 mt-4 sm:mt-8">
               {titles.map((t, i) => (
                 <button
                   key={t.id}
                   onClick={() => setIndex(i)}
                   aria-label={`Show ${t.title}`}
                   className={`h-1.5 rounded-full transition-all ${
-                    i === index ? 'w-6 bg-violet-bright' : 'w-1.5 bg-mute/50'
+                    i === index ? 'w-5 sm:w-6 bg-violet-bright' : 'w-1.5 bg-mute/50'
                   }`}
                 />
               ))}
@@ -86,4 +86,4 @@ export default function FeaturedCarousel({ titles }) {
       )}
     </section>
   );
-        }
+}

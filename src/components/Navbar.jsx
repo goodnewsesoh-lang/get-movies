@@ -28,7 +28,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-40 bg-ink/90 backdrop-blur border-b border-line">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
         <Link to="/" className="shrink-0">
-          <img src="/logo-full.png" alt="Get Movies" className="h-10 w-auto" />
+          <img src="/logo-full.png" alt="Get Movies" className="h-7 sm:h-8 md:h-10 w-auto" />
         </Link>
 
         <nav className="hidden lg:flex items-center gap-5">

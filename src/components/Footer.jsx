@@ -25,7 +25,7 @@ export default function Footer() {
     <footer className="border-t border-line mt-16">
       <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col md:flex-row md:items-start md:justify-between gap-8">
         <div>
-          <p className="font-display text-lg font-semibold text-bone">Get <span className="text-violet-bright">Movies</span></p>
+          <img src="/logo-full.png" alt="Get Movies" className="h-10 w-auto" />
           <p className="text-sm text-mute mt-2 max-w-xs">Bringing you latest movie updates and recommendations.</p>
           {activeSocials.length > 0 && (
             <div className="flex flex-wrap gap-3 mt-4">

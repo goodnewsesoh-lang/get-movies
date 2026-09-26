@@ -2,16 +2,20 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import FeaturedCarousel from '../components/FeaturedCarousel.jsx';
 import TitleRow from '../components/TitleRow.jsx';
+import AnnouncementSpotlight from '../components/AnnouncementSpotlight.jsx';
 import { fetchTitles } from '../lib/titles.js';
 import { fetchHomepageCollections, fetchCollectionItems } from '../lib/collections.js';
 import { fetchEnabledHomeSections } from '../lib/homeSections.js';
+import { fetchHomepageAnnouncements } from '../lib/announcements.js';
 
 export default function Home() {
   const [featured, setFeatured] = useState(null);
   const [sections, setSections] = useState(null);
+  const [spotlightPost, setSpotlightPost] = useState(null);
 
   useEffect(() => {
     fetchTitles({ featuredOnly: true, limit: 10 }).then(setFeatured);
+    fetchHomepageAnnouncements().then((posts) => setSpotlightPost(posts[0] ?? null));
 
     (async () => {
       const [builtIn, collections] = await Promise.all([
@@ -53,6 +57,8 @@ export default function Home() {
   return (
     <div>
       {featured && featured.length > 0 && <FeaturedCarousel titles={featured} />}
+
+      {spotlightPost && <AnnouncementSpotlight post={spotlightPost} />}
 
       {sections?.map((s) => {
         if (s.titles.length === 0) return null;

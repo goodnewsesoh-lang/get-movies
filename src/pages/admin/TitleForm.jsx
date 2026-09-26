@@ -105,6 +105,7 @@ export default function TitleForm() {
         languages: extras.languages ?? [],
         writers: extras.writers ?? [],
         producers: extras.producers ?? [],
+        trailer_url: extras.trailerUrl || f.trailer_url,
       }));
       setGalleryFromTmdb(extras.galleryImages ?? []);
     } catch {
@@ -418,4 +419,4 @@ export default function TitleForm() {
       )}
     </AdminLayout>
   );
-  }
+}

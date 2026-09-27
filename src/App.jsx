@@ -14,6 +14,7 @@ import Announcements from './pages/Announcements.jsx';
 import AnnouncementDetail from './pages/AnnouncementDetail.jsx';
 import About from './pages/About.jsx';
 import Contact from './pages/Contact.jsx';
+import ActorDetail from './pages/ActorDetail.jsx';
 
 import AdminLogin from './pages/admin/Login.jsx';
 import AdminDashboard from './pages/admin/Dashboard.jsx';
@@ -44,6 +45,7 @@ export default function App() {
           <Route path="/announcements/:slug" element={<AnnouncementDetail />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/actor/:id" element={<ActorDetail />} />
 
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />

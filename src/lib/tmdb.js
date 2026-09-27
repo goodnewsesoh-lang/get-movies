@@ -49,7 +49,6 @@ export function mapTmdbResultToDraft(result, type, genreLookup) {
   };
 }
 
-// Fetches director, writers, producers, runtime, country, languages, extra backdrop images, and a trailer URL.
 export async function fetchTmdbExtras(tmdbId, type = 'movie') {
   const endpoint = type === 'tv' ? 'tv' : 'movie';
   const [detailsRes, creditsRes, imagesRes, videosRes] = await Promise.all([
@@ -61,7 +60,7 @@ export async function fetchTmdbExtras(tmdbId, type = 'movie') {
   if (!detailsRes.ok) throw new Error('TMDB details fetch failed');
 
   const details = await detailsRes.json();
-  const credits = creditsRes.ok ? await creditsRes.json() : { crew: [] };
+  const credits = creditsRes.ok ? await creditsRes.json() : { crew: [], cast: [] };
   const images = imagesRes.ok ? await imagesRes.json() : { backdrops: [] };
   const videos = videosRes.ok ? await videosRes.json() : { results: [] };
 
@@ -69,6 +68,13 @@ export async function fetchTmdbExtras(tmdbId, type = 'movie') {
   const director = crew.find((c) => c.job === 'Director')?.name ?? null;
   const writers = crew.filter((c) => c.department === 'Writing').map((c) => c.name);
   const producers = crew.filter((c) => c.job === 'Producer').map((c) => c.name);
+
+  const cast = (credits.cast ?? []).slice(0, 12).map((c) => ({
+    tmdb_person_id: c.id,
+    name: c.name,
+    character: c.character,
+    profile_url: c.profile_path ? `${IMG_BASE}/w300${c.profile_path}` : null,
+  }));
 
   const results = videos.results ?? [];
   const trailer =
@@ -86,14 +92,47 @@ export async function fetchTmdbExtras(tmdbId, type = 'movie') {
     producers,
     galleryImages: (images.backdrops ?? []).slice(0, 8).map((b) => tmdbBackdropUrl(b.file_path)),
     trailerUrl,
+    cast,
   };
 }
 
-// Fetches TMDB's "similar titles" list for suggesting matches against your own library.
 export async function fetchTmdbSimilar(tmdbId, type = 'movie') {
   const endpoint = type === 'tv' ? 'tv' : 'movie';
   const res = await fetch(`${BASE_URL}/${endpoint}/${tmdbId}/similar`, { headers });
   if (!res.ok) throw new Error('TMDB similar fetch failed');
   const data = await res.json();
   return data.results ?? [];
-                                             }
+}
+
+// Fetches an actor's bio, photo, and filmography — used on the public actor page, live.
+export async function fetchTmdbPerson(personId) {
+  const [detailsRes, creditsRes] = await Promise.all([
+    fetch(`${BASE_URL}/person/${personId}`, { headers }),
+    fetch(`${BASE_URL}/person/${personId}/combined_credits`, { headers }),
+  ]);
+  if (!detailsRes.ok) throw new Error('TMDB person fetch failed');
+
+  const details = await detailsRes.json();
+  const credits = creditsRes.ok ? await creditsRes.json() : { cast: [] };
+
+  const filmography = (credits.cast ?? [])
+    .filter((c) => c.poster_path)
+    .sort((a, b) => (b.release_date || b.first_air_date || '').localeCompare(a.release_date || a.first_air_date || ''))
+    .slice(0, 20)
+    .map((c) => ({
+      id: c.id,
+      title: c.title || c.name,
+      poster_url: tmdbPosterUrl(c.poster_path),
+      year: (c.release_date || c.first_air_date || '').slice(0, 4),
+      character: c.character,
+    }));
+
+  return {
+    name: details.name,
+    bio: details.biography || 'No biography available.',
+    profile_url: details.profile_path ? `${IMG_BASE}/w300${details.profile_path}` : null,
+    birthday: details.birthday,
+    place_of_birth: details.place_of_birth,
+    filmography,
+  };
+}

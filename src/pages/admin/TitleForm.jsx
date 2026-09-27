@@ -11,6 +11,7 @@ import {
   fetchTmdbExtras,
 } from '../../lib/tmdb.js';
 import { createTitle, updateTitle, fetchTitleById, uploadImage } from '../../lib/titles.js';
+import { replaceCastForMovie } from '../../lib/cast.js';
 
 const emptyForm = {
   title: '',
@@ -46,6 +47,7 @@ export default function TitleForm() {
   const [tmdbResults, setTmdbResults] = useState([]);
   const [tmdbGenreLookup, setTmdbGenreLookup] = useState({});
   const [galleryFromTmdb, setGalleryFromTmdb] = useState([]);
+  const [pendingCast, setPendingCast] = useState([]);
   const [loadingExtras, setLoadingExtras] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -108,6 +110,7 @@ export default function TitleForm() {
         trailer_url: extras.trailerUrl || f.trailer_url,
       }));
       setGalleryFromTmdb(extras.galleryImages ?? []);
+      setPendingCast(extras.cast ?? []);
     } catch {
       // extras are a bonus, don't block the form if they fail
     } finally {
@@ -152,11 +155,18 @@ export default function TitleForm() {
       runtime: form.runtime === '' ? null : Number(form.runtime),
     };
     try {
+      let savedId = id;
       if (isEdit) {
         await updateTitle(id, payload);
       } else {
         const created = await createTitle(payload);
-        navigate(`/admin/titles/${created.id}/edit`);
+        savedId = created.id;
+      }
+      if (pendingCast.length > 0) {
+        await replaceCastForMovie(savedId, pendingCast);
+      }
+      if (!isEdit) {
+        navigate(`/admin/titles/${savedId}/edit`);
         return;
       }
       navigate('/admin/titles');

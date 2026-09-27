@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import TrailerModal from '../components/TrailerModal.jsx';
 import TitleCard from '../components/TitleCard.jsx';
 import { ErrorState } from '../components/States.jsx';
 import { fetchTitleById } from '../lib/titles.js';
 import { fetchScreenshots } from '../lib/gallery.js';
 import { fetchSimilarTitles } from '../lib/similarTitles.js';
+import { fetchCastForMovie } from '../lib/cast.js';
 
 function InfoRow({ label, value }) {
   if (!value || (Array.isArray(value) && value.length === 0)) return null;
@@ -24,6 +25,7 @@ export default function TitleDetails() {
   const [showTrailer, setShowTrailer] = useState(false);
   const [gallery, setGallery] = useState([]);
   const [similar, setSimilar] = useState([]);
+  const [cast, setCast] = useState([]);
   const [lightbox, setLightbox] = useState(null);
 
   useEffect(() => {
@@ -34,6 +36,7 @@ export default function TitleDetails() {
         setTitle(t);
         fetchScreenshots(t.id).then(setGallery);
         fetchSimilarTitles(t.id).then(setSimilar);
+        fetchCastForMovie(t.id).then(setCast);
       })
       .catch((e) => setError(e.message));
   }, [id]);
@@ -103,6 +106,31 @@ export default function TitleDetails() {
           </div>
         </div>
 
+        {cast.length > 0 && (
+          <div className="mt-12">
+            <h2 className="font-display text-xl text-bone mb-4">Cast</h2>
+            <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 snap-x">
+              {cast.map((c) => (
+                <Link
+                  key={c.id}
+                  to={`/actor/${c.tmdb_person_id}`}
+                  className="shrink-0 w-24 text-center snap-start"
+                >
+                  <div className="w-20 h-20 rounded-full overflow-hidden bg-panel border border-line mx-auto mb-2">
+                    {c.profile_url ? (
+                      <img src={c.profile_url} alt={c.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-mute text-xs">No photo</div>
+                    )}
+                  </div>
+                  <p className="text-bone text-xs font-medium line-clamp-1">{c.name}</p>
+                  {c.character_name && <p className="text-mute text-[11px] line-clamp-1">{c.character_name}</p>}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         {gallery.length > 0 && (
           <div className="mt-12">
             <h2 className="font-display text-xl text-bone mb-4">Gallery</h2>
@@ -144,4 +172,4 @@ export default function TitleDetails() {
       )}
     </div>
   );
-        }
+}

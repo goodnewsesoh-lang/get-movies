@@ -8,6 +8,7 @@ const links = [
   { to: '/admin/collections', label: 'Collections' },
   { to: '/admin/home-order', label: 'Homepage Order' },
   { to: '/admin/announcements', label: 'Announcements' },
+  { to: '/admin/bot-status', label: 'Bot Status' },
   { to: '/admin/settings', label: 'Settings' },
 ];
 

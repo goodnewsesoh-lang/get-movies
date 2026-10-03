@@ -26,6 +26,7 @@ import HomeOrder from './pages/admin/HomeOrder.jsx';
 import AdminAnnouncements from './pages/admin/Announcements.jsx';
 import AnnouncementForm from './pages/admin/AnnouncementForm.jsx';
 import Settings from './pages/admin/Settings.jsx';
+import BotStatus from './pages/admin/BotStatus.jsx';
 
 export default function App() {
   return (
@@ -60,6 +61,7 @@ export default function App() {
           <Route path="/admin/announcements/new" element={<ProtectedRoute><AnnouncementForm /></ProtectedRoute>} />
           <Route path="/admin/announcements/:id/edit" element={<ProtectedRoute><AnnouncementForm /></ProtectedRoute>} />
           <Route path="/admin/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+          <Route path="/admin/bot-status" element={<ProtectedRoute><BotStatus /></ProtectedRoute>} />
         </Routes>
       </main>
       <Footer />

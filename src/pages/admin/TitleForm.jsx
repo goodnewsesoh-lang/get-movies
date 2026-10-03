@@ -27,6 +27,7 @@ const emptyForm = {
   trailer_url: '',
   featured: false,
   published: true,
+  scheduled_at: '',
   tmdb_id: null,
   runtime: '',
   director: '',
@@ -64,6 +65,7 @@ export default function TitleForm() {
           languages: t.languages ?? [],
           writers: t.writers ?? [],
           producers: t.producers ?? [],
+          scheduled_at: t.scheduled_at ? t.scheduled_at.slice(0, 16) : '',
         })
       );
     }
@@ -153,6 +155,7 @@ export default function TitleForm() {
       year: form.year ? Number(form.year) : null,
       rating: form.rating === '' ? null : Number(form.rating),
       runtime: form.runtime === '' ? null : Number(form.runtime),
+      scheduled_at: form.scheduled_at ? new Date(form.scheduled_at).toISOString() : null,
     };
     try {
       let savedId = id;
@@ -411,6 +414,23 @@ export default function TitleForm() {
             />
             Published
           </label>
+        </div>
+
+        <div>
+          <label className="block text-sm text-mute mb-1">Schedule for later (optional)</label>
+          <input
+            type="datetime-local"
+            value={form.scheduled_at || ''}
+            onChange={(e) =>
+              setForm((f) => ({
+                ...f,
+                scheduled_at: e.target.value,
+                published: e.target.value ? false : f.published,
+              }))
+            }
+            className="w-full max-w-xs bg-panel border border-line rounded-lg px-3 py-2 text-bone"
+          />
+          <p className="text-xs text-mute mt-1">Leave blank to publish immediately based on the toggle above. Setting a time automatically unchecks Published — it flips on by itself once that time passes.</p>
         </div>
 
         <button

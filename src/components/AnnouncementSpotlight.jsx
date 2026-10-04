@@ -1,7 +1,19 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-export default function AnnouncementSpotlight({ post }) {
-  if (!post) return null;
+export default function AnnouncementSpotlight({ posts }) {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    if (!posts || posts.length <= 1) return;
+    const timer = setInterval(() => {
+      setIndex((i) => (i + 1) % posts.length);
+    }, 11000);
+    return () => clearInterval(timer);
+  }, [posts]);
+
+  if (!posts || posts.length === 0) return null;
+  const post = posts[index];
   const previewText = post.excerpt || post.content || '';
 
   return (
@@ -13,9 +25,25 @@ export default function AnnouncementSpotlight({ post }) {
             <h3 className="font-display text-lg text-bone mb-2">{post.title}</h3>
             <p className="text-bone/90 text-sm line-clamp-4">{previewText}</p>
           </div>
-          <Link to={`/announcements/${post.slug}`} className="text-violet-bright text-sm mt-4 inline-block">
-            See more →
-          </Link>
+          <div className="flex items-center justify-between mt-4">
+            <Link to={`/announcements/${post.slug}`} className="text-violet-bright text-sm">
+              See more →
+            </Link>
+            {posts.length > 1 && (
+              <div className="flex gap-1.5">
+                {posts.map((p, i) => (
+                  <button
+                    key={p.id}
+                    onClick={() => setIndex(i)}
+                    aria-label={`Show ${p.title}`}
+                    className={`h-1.5 rounded-full transition-all ${
+                      i === index ? 'w-5 bg-violet-bright' : 'w-1.5 bg-mute/50'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
         {post.images?.[0] && (
           <img src={post.images[0]} alt="" className="w-full h-48 md:h-full object-cover" />

@@ -27,6 +27,7 @@ import AdminAnnouncements from './pages/admin/Announcements.jsx';
 import AnnouncementForm from './pages/admin/AnnouncementForm.jsx';
 import Settings from './pages/admin/Settings.jsx';
 import BotStatus from './pages/admin/BotStatus.jsx';
+import Recommendations from './pages/admin/Recommendations.jsx';
 
 export default function App() {
   return (
@@ -62,6 +63,7 @@ export default function App() {
           <Route path="/admin/announcements/:id/edit" element={<ProtectedRoute><AnnouncementForm /></ProtectedRoute>} />
           <Route path="/admin/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/admin/bot-status" element={<ProtectedRoute><BotStatus /></ProtectedRoute>} />
+          <Route path="/admin/recommendations" element={<ProtectedRoute><Recommendations /></ProtectedRoute>} />
         </Routes>
       </main>
       <Footer />

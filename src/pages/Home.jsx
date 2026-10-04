@@ -11,11 +11,11 @@ import { fetchHomepageAnnouncements } from '../lib/announcements.js';
 export default function Home() {
   const [featured, setFeatured] = useState(null);
   const [sections, setSections] = useState(null);
-  const [spotlightPost, setSpotlightPost] = useState(null);
+  const [spotlightPosts, setSpotlightPosts] = useState(null);
 
   useEffect(() => {
     fetchTitles({ featuredOnly: true, limit: 10 }).then(setFeatured);
-    fetchHomepageAnnouncements().then((posts) => setSpotlightPost(posts[0] ?? null));
+    fetchHomepageAnnouncements().then(setSpotlightPosts);
 
     (async () => {
       const [builtIn, collections] = await Promise.all([
@@ -58,7 +58,7 @@ export default function Home() {
     <div>
       {featured && featured.length > 0 && <FeaturedCarousel titles={featured} />}
 
-      {spotlightPost && <AnnouncementSpotlight post={spotlightPost} />}
+      <AnnouncementSpotlight posts={spotlightPosts} />
 
       {sections?.map((s) => {
         if (s.titles.length === 0) return null;

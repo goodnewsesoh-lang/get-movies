@@ -51,11 +51,12 @@ export function mapTmdbResultToDraft(result, type, genreLookup) {
 
 export async function fetchTmdbExtras(tmdbId, type = 'movie') {
   const endpoint = type === 'tv' ? 'tv' : 'movie';
-  const [detailsRes, creditsRes, imagesRes, videosRes] = await Promise.all([
+  const [detailsRes, creditsRes, imagesRes, videosRes, externalRes] = await Promise.all([
     fetch(`${BASE_URL}/${endpoint}/${tmdbId}`, { headers }),
     fetch(`${BASE_URL}/${endpoint}/${tmdbId}/credits`, { headers }),
     fetch(`${BASE_URL}/${endpoint}/${tmdbId}/images`, { headers }),
     fetch(`${BASE_URL}/${endpoint}/${tmdbId}/videos`, { headers }),
+    type === 'tv' ? fetch(`${BASE_URL}/tv/${tmdbId}/external_ids`, { headers }) : Promise.resolve(null),
   ]);
   if (!detailsRes.ok) throw new Error('TMDB details fetch failed');
 
@@ -63,6 +64,9 @@ export async function fetchTmdbExtras(tmdbId, type = 'movie') {
   const credits = creditsRes.ok ? await creditsRes.json() : { crew: [], cast: [] };
   const images = imagesRes.ok ? await imagesRes.json() : { backdrops: [] };
   const videos = videosRes.ok ? await videosRes.json() : { results: [] };
+  const external = externalRes && externalRes.ok ? await externalRes.json() : null;
+
+  const imdbId = type === 'tv' ? external?.imdb_id ?? null : details.imdb_id ?? null;
 
   const crew = credits.crew ?? [];
   const director = crew.find((c) => c.job === 'Director')?.name ?? null;
@@ -93,6 +97,7 @@ export async function fetchTmdbExtras(tmdbId, type = 'movie') {
     galleryImages: (images.backdrops ?? []).slice(0, 8).map((b) => tmdbBackdropUrl(b.file_path)),
     trailerUrl,
     cast,
+    imdbId,
   };
 }
 
@@ -104,7 +109,6 @@ export async function fetchTmdbSimilar(tmdbId, type = 'movie') {
   return data.results ?? [];
 }
 
-// Fetches an actor's bio, photo, and filmography — used on the public actor page, live.
 export async function fetchTmdbPerson(personId) {
   const [detailsRes, creditsRes] = await Promise.all([
     fetch(`${BASE_URL}/person/${personId}`, { headers }),

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import TrailerModal from '../components/TrailerModal.jsx';
 import TitleCard from '../components/TitleCard.jsx';
+import CountdownTimer from '../components/CountdownTimer.jsx';
 import { ErrorState } from '../components/States.jsx';
 import { fetchTitleById } from '../lib/titles.js';
 import { fetchScreenshots } from '../lib/gallery.js';
@@ -44,7 +45,28 @@ export default function TitleDetails() {
   if (error) return <div className="max-w-4xl mx-auto px-4 py-16"><ErrorState message={error} /></div>;
   if (!title) return <div className="max-w-4xl mx-auto px-4 py-16 text-mute">Loading…</div>;
 
+  const isLocked = title.unlock_at && new Date(title.unlock_at) > new Date();
   const runtimeLabel = title.runtime ? `${Math.floor(title.runtime / 60)}h ${title.runtime % 60}m` : null;
+
+  if (isLocked) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+        <img
+          src={title.poster_url}
+          alt={title.title}
+          className="w-48 mx-auto rounded-xl border border-line shadow-glow mb-6 blur-sm"
+        />
+        <span className="inline-block mb-3 text-xs font-medium text-violet-bright bg-violet-dim/40 border border-violet/40 rounded-full px-3 py-1">
+          Coming Soon
+        </span>
+        <h1 className="font-display text-3xl text-bone mb-2">{title.title}</h1>
+        <p className="text-mute text-sm mb-6">{title.year}{title.genres?.length ? ` · ${title.genres.slice(0, 3).join(', ')}` : ''}</p>
+        <p className="text-bone text-lg font-medium">
+          Unlocks in <CountdownTimer target={title.unlock_at} />
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -75,6 +97,21 @@ export default function TitleDetails() {
               {runtimeLabel ? ` · ${runtimeLabel}` : ''}
               {title.platform ? ` · ${title.platform}` : ''}
             </p>
+
+            {(title.imdb_rating || title.rotten_tomatoes_rating || title.metacritic_rating) && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {title.imdb_rating && (
+                  <span className="text-xs text-bone bg-panel border border-line rounded-full px-3 py-1">IMDb {title.imdb_rating}</span>
+                )}
+                {title.rotten_tomatoes_rating && (
+                  <span className="text-xs text-bone bg-panel border border-line rounded-full px-3 py-1">RT {title.rotten_tomatoes_rating}</span>
+                )}
+                {title.metacritic_rating && (
+                  <span className="text-xs text-bone bg-panel border border-line rounded-full px-3 py-1">Metacritic {title.metacritic_rating}</span>
+                )}
+              </div>
+            )}
+
             {title.genres?.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-3">
                 {title.genres.map((g) => (
@@ -111,11 +148,7 @@ export default function TitleDetails() {
             <h2 className="font-display text-xl text-bone mb-4">Cast</h2>
             <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 snap-x">
               {cast.map((c) => (
-                <Link
-                  key={c.id}
-                  to={`/actor/${c.tmdb_person_id}`}
-                  className="shrink-0 w-24 text-center snap-start"
-                >
+                <Link key={c.id} to={`/actor/${c.tmdb_person_id}`} className="shrink-0 w-24 text-center snap-start">
                   <div className="w-20 h-20 rounded-full overflow-hidden bg-panel border border-line mx-auto mb-2">
                     {c.profile_url ? (
                       <img src={c.profile_url} alt={c.name} className="w-full h-full object-cover" />
@@ -163,10 +196,7 @@ export default function TitleDetails() {
       {showTrailer && <TrailerModal url={title.trailer_url} onClose={() => setShowTrailer(false)} />}
 
       {lightbox && (
-        <div
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
-          onClick={() => setLightbox(null)}
-        >
+        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
           <img src={lightbox} alt="" className="max-w-full max-h-full rounded-lg" />
         </div>
       )}

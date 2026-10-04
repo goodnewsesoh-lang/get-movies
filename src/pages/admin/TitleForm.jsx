@@ -10,6 +10,7 @@ import {
   tmdbPosterUrl,
   fetchTmdbExtras,
 } from '../../lib/tmdb.js';
+import { fetchOmdbRatings } from '../../lib/omdb.js';
 import { createTitle, updateTitle, fetchTitleById, uploadImage } from '../../lib/titles.js';
 import { replaceCastForMovie } from '../../lib/cast.js';
 
@@ -28,7 +29,12 @@ const emptyForm = {
   featured: false,
   published: true,
   scheduled_at: '',
+  unlock_at: '',
   tmdb_id: null,
+  imdb_id: '',
+  imdb_rating: '',
+  rotten_tomatoes_rating: '',
+  metacritic_rating: '',
   runtime: '',
   director: '',
   country: '',
@@ -66,6 +72,7 @@ export default function TitleForm() {
           writers: t.writers ?? [],
           producers: t.producers ?? [],
           scheduled_at: t.scheduled_at ? t.scheduled_at.slice(0, 16) : '',
+          unlock_at: t.unlock_at ? t.unlock_at.slice(0, 16) : '',
         })
       );
     }
@@ -110,9 +117,22 @@ export default function TitleForm() {
         writers: extras.writers ?? [],
         producers: extras.producers ?? [],
         trailer_url: extras.trailerUrl || f.trailer_url,
+        imdb_id: extras.imdbId || '',
       }));
       setGalleryFromTmdb(extras.galleryImages ?? []);
       setPendingCast(extras.cast ?? []);
+
+      if (extras.imdbId) {
+        const omdb = await fetchOmdbRatings(extras.imdbId);
+        if (omdb) {
+          setForm((f) => ({
+            ...f,
+            imdb_rating: omdb.imdb_rating || '',
+            rotten_tomatoes_rating: omdb.rotten_tomatoes_rating || '',
+            metacritic_rating: omdb.metacritic_rating || '',
+          }));
+        }
+      }
     } catch {
       // extras are a bonus, don't block the form if they fail
     } finally {
@@ -156,6 +176,7 @@ export default function TitleForm() {
       rating: form.rating === '' ? null : Number(form.rating),
       runtime: form.runtime === '' ? null : Number(form.runtime),
       scheduled_at: form.scheduled_at ? new Date(form.scheduled_at).toISOString() : null,
+      unlock_at: form.unlock_at ? new Date(form.unlock_at).toISOString() : null,
     };
     try {
       let savedId = id;
@@ -363,6 +384,33 @@ export default function TitleForm() {
           </div>
         </div>
 
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm text-mute mb-1">IMDb rating</label>
+            <input
+              value={form.imdb_rating || ''}
+              onChange={(e) => setForm((f) => ({ ...f, imdb_rating: e.target.value }))}
+              className="w-full bg-panel border border-line rounded-lg px-3 py-2 text-bone text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-mute mb-1">Rotten Tomatoes</label>
+            <input
+              value={form.rotten_tomatoes_rating || ''}
+              onChange={(e) => setForm((f) => ({ ...f, rotten_tomatoes_rating: e.target.value }))}
+              className="w-full bg-panel border border-line rounded-lg px-3 py-2 text-bone text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-mute mb-1">Metacritic</label>
+            <input
+              value={form.metacritic_rating || ''}
+              onChange={(e) => setForm((f) => ({ ...f, metacritic_rating: e.target.value }))}
+              className="w-full bg-panel border border-line rounded-lg px-3 py-2 text-bone text-sm"
+            />
+          </div>
+        </div>
+
         <div>
           <label className="block text-sm text-mute mb-1">Overview</label>
           <textarea
@@ -431,6 +479,17 @@ export default function TitleForm() {
             className="w-full max-w-xs bg-panel border border-line rounded-lg px-3 py-2 text-bone"
           />
           <p className="text-xs text-mute mt-1">Leave blank to publish immediately based on the toggle above. Setting a time automatically unchecks Published — it flips on by itself once that time passes.</p>
+        </div>
+
+        <div>
+          <label className="block text-sm text-mute mb-1">Coming Soon — unlock date/time (optional)</label>
+          <input
+            type="datetime-local"
+            value={form.unlock_at || ''}
+            onChange={(e) => setForm((f) => ({ ...f, unlock_at: e.target.value }))}
+            className="w-full max-w-xs bg-panel border border-line rounded-lg px-3 py-2 text-bone"
+          />
+          <p className="text-xs text-mute mt-1">If set, this title shows a locked "Coming Soon" card with a countdown until this time, even while Published is on.</p>
         </div>
 
         <button

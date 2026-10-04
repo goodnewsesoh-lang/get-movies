@@ -2,3 +2,5 @@ export const SUPABASE_URL = 'https://btskbdoaujpzgjjjuhgb.supabase.co';
 export const SUPABASE_ANON_KEY = 'sb_publishable_OzxEAxWVX832nOrsIkRKyQ_hqNgoAOk';
 
 export const TMDB_READ_ACCESS_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI0ODNkNzRmZmVjZTE5NjliODRkMWU0N2JlMGFkMDI1NyIsIm5iZiI6MTc4ODM4OTA3Ny44NSwic3ViIjoiNmE5OGE2ZDU5YjVlMzA3YzM0NGI2ZjdkIiwic2NvcGVzIjpbImFwaV9yZWFkIl0sInZlcnNpb24iOjF9.ExIIZijU03uXfsZf-IiJFznxIuDzSssmUuBkFvcUwm0';
+
+export const OMDB_API_KEY = 'PASTE_YOUR_OMDB_KEY_HERE';

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
+import SearchBox from './SearchBox.jsx';
 
 const links = [
   { to: '/', label: 'Home' },
@@ -13,16 +14,6 @@ const links = [
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState('');
-  const navigate = useNavigate();
-
-  const submitSearch = (e) => {
-    e.preventDefault();
-    if (!query.trim()) return;
-    navigate(`/search?q=${encodeURIComponent(query.trim())}`);
-    setQuery('');
-    setOpen(false);
-  };
 
   return (
     <header className="sticky top-0 z-40 bg-ink/90 backdrop-blur border-b border-line">
@@ -45,15 +36,10 @@ export default function Navbar() {
           ))}
         </nav>
 
-        <form onSubmit={submitSearch} className="hidden lg:block relative">
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            type="text"
-            placeholder="Search titles, genres, years"
-            className="w-56 rounded-full bg-panel border border-line px-4 py-2 text-sm text-bone placeholder:text-mute focus:border-violet outline-none"
-          />
-        </form>
+        <SearchBox
+          className="hidden lg:block w-56"
+          inputClassName="w-56 rounded-full bg-panel border border-line px-4 py-2 text-sm text-bone placeholder:text-mute focus:border-violet outline-none"
+        />
 
         <button
           onClick={() => setOpen((v) => !v)}
@@ -73,15 +59,11 @@ export default function Navbar() {
 
       {open && (
         <div className="lg:hidden border-t border-line px-4 py-4 space-y-4 bg-ink">
-          <form onSubmit={submitSearch}>
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              type="text"
-              placeholder="Search titles, genres, years"
-              className="w-full rounded-full bg-panel border border-line px-4 py-2 text-sm text-bone placeholder:text-mute focus:border-violet outline-none"
-            />
-          </form>
+          <SearchBox
+            className="w-full"
+            inputClassName="w-full rounded-full bg-panel border border-line px-4 py-2 text-sm text-bone placeholder:text-mute focus:border-violet outline-none"
+            onNavigate={() => setOpen(false)}
+          />
           <nav className="flex flex-col gap-3">
             {links.map((l) => (
               <NavLink

@@ -33,16 +33,20 @@ async function tmdbSearch(title, type, year) {
 
 async function tmdbExtras(tmdbId, type) {
   const endpoint = type === 'tv' ? 'tv' : 'movie';
-  const [detailsRes, creditsRes, imagesRes, videosRes] = await Promise.all([
+  const [detailsRes, creditsRes, imagesRes, videosRes, externalRes] = await Promise.all([
     fetch(`${TMDB_BASE}/${endpoint}/${tmdbId}`, { headers: tmdbHeaders() }),
     fetch(`${TMDB_BASE}/${endpoint}/${tmdbId}/credits`, { headers: tmdbHeaders() }),
     fetch(`${TMDB_BASE}/${endpoint}/${tmdbId}/images`, { headers: tmdbHeaders() }),
     fetch(`${TMDB_BASE}/${endpoint}/${tmdbId}/videos`, { headers: tmdbHeaders() }),
+    type === 'tv' ? fetch(`${TMDB_BASE}/tv/${tmdbId}/external_ids`, { headers: tmdbHeaders() }) : Promise.resolve(null),
   ]);
   const details = detailsRes.ok ? await detailsRes.json() : {};
   const credits = creditsRes.ok ? await creditsRes.json() : { crew: [], cast: [] };
   const images = imagesRes.ok ? await imagesRes.json() : { backdrops: [] };
   const videos = videosRes.ok ? await videosRes.json() : { results: [] };
+  const external = externalRes && externalRes.ok ? await externalRes.json() : null;
+
+  const imdbId = type === 'tv' ? external?.imdb_id ?? null : details.imdb_id ?? null;
 
   const crew = credits.crew ?? [];
   const director = crew.find((c) => c.job === 'Director')?.name ?? null;
@@ -70,10 +74,26 @@ async function tmdbExtras(tmdbId, type) {
     galleryImages: (images.backdrops ?? []).slice(0, 8).map((b) => backdropUrl(b.file_path)),
     trailerUrl: trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : null,
     cast,
+    imdbId,
   };
 }
 
-async function saveExtras(supabase, movieId, extras) {
+async function fetchOmdb(imdbId) {
+  if (!imdbId || !process.env.OMDB_API_KEY) return null;
+  const res = await fetch(`https://www.omdbapi.com/?i=${imdbId}&apikey=${process.env.OMDB_API_KEY}`);
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (data.Response === 'False') return null;
+  const ratings = data.Ratings || [];
+  const find = (source) => ratings.find((r) => r.Source === source)?.Value ?? null;
+  return {
+    imdb_rating: data.imdbRating && data.imdbRating !== 'N/A' ? data.imdbRating : find('Internet Movie Database'),
+    rotten_tomatoes_rating: find('Rotten Tomatoes'),
+    metacritic_rating: find('Metacritic'),
+  };
+}
+
+async function saveExtras(supabase, movieId, extras, omdb) {
   await supabase.from('movies').update({
     runtime: extras.runtime,
     director: extras.director,
@@ -82,6 +102,10 @@ async function saveExtras(supabase, movieId, extras) {
     writers: extras.writers,
     producers: extras.producers,
     trailer_url: extras.trailerUrl || undefined,
+    imdb_id: extras.imdbId || undefined,
+    imdb_rating: omdb?.imdb_rating || undefined,
+    rotten_tomatoes_rating: omdb?.rotten_tomatoes_rating || undefined,
+    metacritic_rating: omdb?.metacritic_rating || undefined,
   }).eq('id', movieId);
 
   if (extras.cast.length > 0) {
@@ -148,8 +172,9 @@ export default async function handler(req, res) {
           continue;
         }
         const extras = await tmdbExtras(match.id, movie.type);
+        const omdb = await fetchOmdb(extras.imdbId);
         await supabase.from('movies').update({ tmdb_id: match.id }).eq('id', movie.id);
-        await saveExtras(supabase, movie.id, extras);
+        await saveExtras(supabase, movie.id, extras, omdb);
         processed++;
       } catch (e) {
         errors.push(`${movie.title}: ${e.message}`);
@@ -166,7 +191,8 @@ export default async function handler(req, res) {
     for (const movie of missingExtras ?? []) {
       try {
         const extras = await tmdbExtras(movie.tmdb_id, movie.type);
-        await saveExtras(supabase, movie.id, extras);
+        const omdb = await fetchOmdb(extras.imdbId);
+        await saveExtras(supabase, movie.id, extras, omdb);
         processed++;
       } catch (e) {
         errors.push(`Movie #${movie.id}: ${e.message}`);
@@ -203,4 +229,4 @@ export default async function handler(req, res) {
     }).eq('id', 1);
     return res.status(500).json({ error: e.message });
   }
-                                                        }
+}

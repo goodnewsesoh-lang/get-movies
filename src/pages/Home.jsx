@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import FeaturedCarousel from '../components/FeaturedCarousel.jsx';
 import TitleRow from '../components/TitleRow.jsx';
 import AnnouncementSpotlight from '../components/AnnouncementSpotlight.jsx';
+import RecommendationsBox from '../components/RecommendationsBox.jsx';
 import { fetchTitles } from '../lib/titles.js';
 import { fetchHomepageCollections, fetchCollectionItems } from '../lib/collections.js';
 import { fetchEnabledHomeSections } from '../lib/homeSections.js';
@@ -90,6 +91,8 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      <RecommendationsBox />
     </div>
   );
 }

@@ -9,7 +9,24 @@ html {
 body {
   background-color: #08070B;
   color: #F4F1F7;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Poppins', sans-serif;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 600;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+input[type='file']::file-selector-button {
+  font-family: inherit;
 }
 
 ::-webkit-scrollbar {
@@ -41,4 +58,4 @@ body {
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
   }
-  }
+}

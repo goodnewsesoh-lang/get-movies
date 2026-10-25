@@ -17,8 +17,9 @@ export default {
         mute: '#9992A8',
       },
       fontFamily: {
-        display: ['"Fraunces"', 'serif'],
-        body: ['"Inter"', 'sans-serif'],
+        sans: ['Poppins', 'sans-serif'],
+        display: ['Poppins', 'sans-serif'],
+        body: ['Poppins', 'sans-serif'],
       },
       boxShadow: {
         glow: '0 0 0 1px rgba(124,58,237,0.35), 0 8px 30px rgba(124,58,237,0.15)',

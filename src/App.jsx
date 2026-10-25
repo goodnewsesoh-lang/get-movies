@@ -1,4 +1,5 @@
-import { Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar.jsx';
 import Footer from './components/Footer.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
@@ -15,6 +16,11 @@ import AnnouncementDetail from './pages/AnnouncementDetail.jsx';
 import About from './pages/About.jsx';
 import Contact from './pages/Contact.jsx';
 import ActorDetail from './pages/ActorDetail.jsx';
+import Privacy from './pages/Privacy.jsx';
+import Terms from './pages/Terms.jsx';
+import Dmca from './pages/Dmca.jsx';
+import Recommend from './pages/Recommend.jsx';
+import MovieFinder from './pages/MovieFinder.jsx';
 
 import AdminLogin from './pages/admin/Login.jsx';
 import AdminDashboard from './pages/admin/Dashboard.jsx';
@@ -29,9 +35,18 @@ import Settings from './pages/admin/Settings.jsx';
 import BotStatus from './pages/admin/BotStatus.jsx';
 import Recommendations from './pages/admin/Recommendations.jsx';
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
+
 export default function App() {
   return (
     <div className="min-h-screen flex flex-col bg-ink">
+      <ScrollToTop />
       <Navbar />
       <main className="flex-1">
         <Routes>
@@ -48,6 +63,11 @@ export default function App() {
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/actor/:id" element={<ActorDetail />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/dmca" element={<Dmca />} />
+          <Route path="/recommend" element={<Recommend />} />
+          <Route path="/movie-finder" element={<MovieFinder />} />
 
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />

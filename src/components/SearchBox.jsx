@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchTitles } from '../lib/titles.js';
 
-export default function SearchBox({ className = '', inputClassName = '', onNavigate }) {
+export default function SearchBox({ className = '', inputClassName = '', autoFocus = false, onNavigate }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [open, setOpen] = useState(false);
@@ -51,8 +51,12 @@ export default function SearchBox({ className = '', inputClassName = '', onNavig
       <form onSubmit={submitSearch}>
         <input
           value={query}
-          onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+          }}
           onFocus={() => setOpen(true)}
+          autoFocus={autoFocus}
           type="text"
           placeholder="Search titles, genres, years"
           className={inputClassName}
@@ -73,7 +77,10 @@ export default function SearchBox({ className = '', inputClassName = '', onNavig
               )}
               <div className="min-w-0">
                 <p className="text-bone text-sm truncate">{r.title}</p>
-                <p className="text-mute text-xs">{r.year}{r.type === 'tv' ? ' · TV' : ''}</p>
+                <p className="text-mute text-xs">
+                  {r.year}
+                  {r.type === 'tv' ? ' · TV' : ''}
+                </p>
               </div>
             </button>
           ))}

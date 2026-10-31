@@ -1,7 +1,9 @@
 import { supabase } from './supabaseClient.js';
+import { canonicalGenre, genreVariants } from './genres.js';
 
 const TABLE = 'movies';
 
+// Public-facing query: only published titles, with optional filters.
 export async function fetchTitles({
   type,
   genre,
@@ -16,10 +18,13 @@ export async function fetchTitles({
   if (type) query = query.eq('type', type);
   if (year) query = query.eq('year', year);
   if (featuredOnly) query = query.eq('featured', true);
-  if (genre) query = query.contains('genres', [genre]);
+  if (genre) query = query.overlaps('genres', genreVariants(genre));
   if (search) query = query.ilike('title', `%${search}%`);
 
-  query = query.order(sort === 'rating' ? 'rating' : 'created_at', { ascending: false });
+  query =
+    sort === 'rating'
+      ? query.order('rating', { ascending: false, nullsFirst: false })
+      : query.order('created_at', { ascending: false });
   query = query.limit(limit);
 
   const { data, error } = await query;
@@ -36,10 +41,19 @@ export async function fetchTitleById(id) {
 export async function fetchAllGenres() {
   const { data, error } = await supabase.from(TABLE).select('genres').eq('published', true);
   if (error) throw error;
-  const set = new Set();
-  (data ?? []).forEach((row) => (row.genres ?? []).forEach((g) => set.add(g)));
-  return Array.from(set).sort();
+  const seen = new Map();
+  (data ?? []).forEach((row) =>
+    (row.genres ?? []).forEach((g) => {
+      const canon = canonicalGenre(g);
+      if (!canon) return;
+      const key = canon.toLowerCase();
+      if (!seen.has(key)) seen.set(key, canon);
+    })
+  );
+  return Array.from(seen.values()).sort((a, b) => a.localeCompare(b));
 }
+
+// ── Admin-only operations (require an authenticated session; enforced by RLS) ──
 
 export async function fetchAllTitlesForAdmin() {
   const { data, error } = await supabase.from(TABLE).select('*').order('created_at', { ascending: false });
@@ -83,4 +97,4 @@ export async function fetchAdminStats() {
     published: all.filter((t) => t.published).length,
     recent: all.slice(0, 5),
   };
-  }
+}

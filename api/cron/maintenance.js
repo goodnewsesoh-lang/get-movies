@@ -166,22 +166,29 @@ async function saveExtras(supabase, movieId, extras, omdb) {
 }
 
 export default async function handler(req, res) {
-  const authHeader = req.headers['authorization'];
-  const isCron = authHeader === `Bearer ${process.env.CRON_SECRET}`;
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
+  const authHeader = req.headers['authorization'];
+  const isCron = Boolean(process.env.CRON_SECRET) && authHeader === `Bearer ${process.env.CRON_SECRET}`;
+
+  // A signed-in visitor is not enough: the account must be on the admins list.
   let isAdmin = false;
   if (!isCron && authHeader?.startsWith('Bearer ')) {
-    const token = authHeader.replace('Bearer ', '');
-    const supabasePublic = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
-    const { data } = await supabasePublic.auth.getUser(token);
-    isAdmin = Boolean(data?.user);
+    const token = authHeader.slice(7);
+    const { data } = await supabase.auth.getUser(token);
+    if (data?.user) {
+      const { data: row } = await supabase
+        .from('admins')
+        .select('user_id')
+        .eq('user_id', data.user.id)
+        .maybeSingle();
+      isAdmin = Boolean(row);
+    }
   }
 
   if (!isCron && !isAdmin) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
-
-  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   const { data: job } = await supabase
     .from('jobs')

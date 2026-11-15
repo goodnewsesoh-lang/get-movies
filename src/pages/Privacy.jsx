@@ -1,9 +1,11 @@
 import LegalPage, { Section } from '../components/LegalPage.jsx';
-import { SITE_NAME, SUPPORT_EMAIL, LEGAL_UPDATED } from '../lib/siteInfo.js';
+import { SITE_NAME, SUPPORT_EMAIL } from '../lib/siteInfo.js';
+
+const PRIVACY_UPDATED = 'November 15, 2026';
 
 export default function Privacy() {
   return (
-    <LegalPage title="Privacy Policy" updated={LEGAL_UPDATED}>
+    <LegalPage title="Privacy Policy" updated={PRIVACY_UPDATED}>
       <Section heading="Who we are">
         <p>
           {SITE_NAME} is a movie and TV recommendation website. You can reach us at{' '}
@@ -19,12 +21,21 @@ export default function Privacy() {
             personal details.
           </li>
           <li>
-            <strong>Messages to us.</strong> If you contact us by email, WhatsApp or our contact form (once it is
-            available), we keep your message and contact details only to reply to you.
+            <strong>Messages through the contact form.</strong> We store your name, email address and message in our
+            database. Only the site owner can read them, and we use them only to reply to you.
           </li>
           <li>
-            <strong>Technical logs.</strong> Our hosting and database providers may record your IP address, browser
-            type and the pages you request as part of normal operation and security.
+            <strong>Email or WhatsApp.</strong> If you contact us by email or WhatsApp, we keep your message and contact
+            details only to reply to you.
+          </li>
+          <li>
+            <strong>Approximate country.</strong> When you open a title page, our hosting provider tells our server your
+            approximate country, worked out from your IP address, so we can show streaming options for where you live.
+            We use it only to answer that request and we don't store it.
+          </li>
+          <li>
+            <strong>Technical logs.</strong> Our hosting and database providers may record your IP address, browser type
+            and the pages you request as part of normal operation and security.
           </li>
         </ul>
         <p>We don't ask visitors to create accounts, and we never collect payment details.</p>
@@ -38,6 +49,10 @@ export default function Privacy() {
             TMDB's servers, so TMDB can see your IP address and device information.
           </li>
           <li>
+            "Where to Watch" information comes from TMDB, with streaming availability data provided by JustWatch. Our
+            server fetches the list, and your browser loads the small streaming service logos from TMDB's servers.
+          </li>
+          <li>
             Trailers are played through YouTube or Vimeo. When you press play, those services may set their own cookies.
           </li>
         </ul>
@@ -46,8 +61,9 @@ export default function Privacy() {
 
       <Section heading="Cookies and local storage">
         <p>
-          We don't use cookies to track visitors. The admin area, which is for the site owner only, saves a login
-          session in the browser. The third-party services above may set their own cookies.
+          We don't use cookies to track visitors. To limit spam, your browser's local storage remembers when you last
+          sent a message or recommendation. The admin area, which is for the site owner only, saves a login session in
+          the browser. The third-party services above may set their own cookies.
         </p>
       </Section>
 
@@ -60,8 +76,8 @@ export default function Privacy() {
 
       <Section heading="How long we keep information">
         <p>
-          Approved recommendations stay on the site until we remove them. Messages are kept only as long as needed to
-          reply. You can ask us to delete anything you sent us.
+          Approved recommendations stay on the site until we remove them. Messages are kept only as long as we need them
+          to reply, and are then deleted. You can ask us to delete anything you sent us.
         </p>
       </Section>
 

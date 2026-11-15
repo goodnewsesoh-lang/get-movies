@@ -12,7 +12,9 @@ const links = [
   { to: '/admin/announcements', label: 'Announcements' },
   { to: '/admin/recommendations', label: 'Recommendations' },
   { to: '/admin/messages', label: 'Messages' },
+  { to: '/admin/popup', label: 'Welcome Pop-up' },
   { to: '/admin/bot-status', label: 'Bot Status' },
+  { to: '/admin/security', label: 'Security & Health' },
   { to: '/admin/settings', label: 'Settings' },
 ];
 

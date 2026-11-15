@@ -34,6 +34,7 @@ import AnnouncementForm from './pages/admin/AnnouncementForm.jsx';
 import Settings from './pages/admin/Settings.jsx';
 import BotStatus from './pages/admin/BotStatus.jsx';
 import Recommendations from './pages/admin/Recommendations.jsx';
+import AdminMessages from './pages/admin/Messages.jsx';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -84,6 +85,7 @@ export default function App() {
           <Route path="/admin/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/admin/bot-status" element={<ProtectedRoute><BotStatus /></ProtectedRoute>} />
           <Route path="/admin/recommendations" element={<ProtectedRoute><Recommendations /></ProtectedRoute>} />
+          <Route path="/admin/messages" element={<ProtectedRoute><AdminMessages /></ProtectedRoute>} />
         </Routes>
       </main>
       <Footer />

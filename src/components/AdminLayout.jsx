@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import { fetchUnreadCount } from '../lib/messages.js';
 
 const links = [
   { to: '/admin', label: 'Dashboard', end: true },
@@ -9,6 +11,7 @@ const links = [
   { to: '/admin/home-order', label: 'Homepage Order' },
   { to: '/admin/announcements', label: 'Announcements' },
   { to: '/admin/recommendations', label: 'Recommendations' },
+  { to: '/admin/messages', label: 'Messages' },
   { to: '/admin/bot-status', label: 'Bot Status' },
   { to: '/admin/settings', label: 'Settings' },
 ];
@@ -16,6 +19,11 @@ const links = [
 export default function AdminLayout({ children }) {
   const { signOut } = useAuth();
   const navigate = useNavigate();
+  const [unread, setUnread] = useState(0);
+
+  useEffect(() => {
+    fetchUnreadCount().then(setUnread);
+  }, []);
 
   const logout = async () => {
     await signOut();
@@ -25,7 +33,7 @@ export default function AdminLayout({ children }) {
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 flex flex-col md:flex-row gap-8">
       <aside className="md:w-48 shrink-0">
-        <p className="font-display text-lg text-bone mb-4">Admin</p>
+        <p className="text-lg text-bone mb-4">Admin</p>
         <nav className="flex md:flex-col gap-2 flex-wrap">
           {links.map((l) => (
             <NavLink
@@ -39,6 +47,9 @@ export default function AdminLayout({ children }) {
               }
             >
               {l.label}
+              {l.to === '/admin/messages' && unread > 0 && (
+                <span className="ml-2 text-[10px] bg-violet text-bone rounded-full px-1.5 py-0.5">{unread}</span>
+              )}
             </NavLink>
           ))}
           <button

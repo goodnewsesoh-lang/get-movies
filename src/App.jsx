@@ -3,6 +3,7 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar.jsx';
 import Footer from './components/Footer.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
+import WelcomePopup from './components/WelcomePopup.jsx';
 
 import Home from './pages/Home.jsx';
 import Browse from './pages/Browse.jsx';
@@ -35,6 +36,8 @@ import Settings from './pages/admin/Settings.jsx';
 import BotStatus from './pages/admin/BotStatus.jsx';
 import Recommendations from './pages/admin/Recommendations.jsx';
 import AdminMessages from './pages/admin/Messages.jsx';
+import PopupSettings from './pages/admin/PopupSettings.jsx';
+import SecurityHealth from './pages/admin/SecurityHealth.jsx';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -45,6 +48,8 @@ function ScrollToTop() {
 }
 
 export default function App() {
+  const { pathname } = useLocation();
+
   return (
     <div className="min-h-screen flex flex-col bg-ink">
       <ScrollToTop />
@@ -86,9 +91,12 @@ export default function App() {
           <Route path="/admin/bot-status" element={<ProtectedRoute><BotStatus /></ProtectedRoute>} />
           <Route path="/admin/recommendations" element={<ProtectedRoute><Recommendations /></ProtectedRoute>} />
           <Route path="/admin/messages" element={<ProtectedRoute><AdminMessages /></ProtectedRoute>} />
+          <Route path="/admin/popup" element={<ProtectedRoute><PopupSettings /></ProtectedRoute>} />
+          <Route path="/admin/security" element={<ProtectedRoute><SecurityHealth /></ProtectedRoute>} />
         </Routes>
       </main>
       <Footer />
+      {pathname === '/' && <WelcomePopup />}
     </div>
   );
 }

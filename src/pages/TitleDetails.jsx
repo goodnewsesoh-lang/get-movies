@@ -3,7 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import TrailerModal from '../components/TrailerModal.jsx';
 import TitleCard from '../components/TitleCard.jsx';
 import CountdownTimer from '../components/CountdownTimer.jsx';
-import { ErrorState } from '../components/States.jsx';
+import WhereToWatch from '../components/WhereToWatch.jsx';
+import { ErrorState, Spinner } from '../components/States.jsx';
 import { fetchTitleById } from '../lib/titles.js';
 import { fetchScreenshots } from '../lib/gallery.js';
 import { fetchSimilarTitles } from '../lib/similarTitles.js';
@@ -43,7 +44,7 @@ export default function TitleDetails() {
   }, [id]);
 
   if (error) return <div className="max-w-4xl mx-auto px-4 py-16"><ErrorState message={error} /></div>;
-  if (!title) return <div className="max-w-4xl mx-auto px-4 py-16 text-mute">Loading…</div>;
+  if (!title) return <div className="max-w-4xl mx-auto px-4 py-16"><Spinner className="py-10" /></div>;
 
   const isLocked = title.unlock_at && new Date(title.unlock_at) > new Date();
   const runtimeLabel = title.runtime ? `${Math.floor(title.runtime / 60)}h ${title.runtime % 60}m` : null;
@@ -142,6 +143,12 @@ export default function TitleDetails() {
             </div>
           </div>
         </div>
+
+        {title.tmdb_id && (
+          <div className="mt-12">
+            <WhereToWatch tmdbId={title.tmdb_id} type={title.type} />
+          </div>
+        )}
 
         {cast.length > 0 && (
           <div className="mt-12">

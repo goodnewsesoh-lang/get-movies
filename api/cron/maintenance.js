@@ -209,11 +209,14 @@ export default async function handler(req, res) {
     await supabase.from('movies').update({ published: true }).eq('published', false).lte('scheduled_at', nowIso).not('scheduled_at', 'is', null);
     await supabase.from('announcements').update({ published: true }).eq('published', false).lte('scheduled_at', nowIso).not('scheduled_at', 'is', null);
 
+    // Season entries are skipped in every pass below: they keep their own season data.
+
     // Pass 1: titles with no TMDB match saved yet
     const { data: noTmdb } = await supabase
       .from('movies')
       .select('id, title, type, year')
       .is('tmdb_id', null)
+      .is('season_number', null)
       .is('extras_checked_at', null)
       .limit(5);
     total += noTmdb?.length ?? 0;
@@ -243,6 +246,7 @@ export default async function handler(req, res) {
       .from('movies')
       .select('id, tmdb_id, type')
       .not('tmdb_id', 'is', null)
+      .is('season_number', null)
       .is('director', null)
       .is('extras_checked_at', null)
       .limit(5);
@@ -269,6 +273,7 @@ export default async function handler(req, res) {
         .from('movies')
         .select('id, tmdb_id, type, imdb_id')
         .not('tmdb_id', 'is', null)
+        .is('season_number', null)
         .is('omdb_checked_at', null)
         .is('imdb_rating', null)
         .is('rotten_tomatoes_rating', null)

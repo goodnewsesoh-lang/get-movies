@@ -11,9 +11,11 @@ export default function TitleCard({ title }) {
     poster_url,
     genres = [],
     unlock_at,
+    season_number,
   } = title;
 
   const isLocked = unlock_at && new Date(unlock_at) > new Date();
+  const badge = type === 'tv' ? (season_number != null ? `TV · S${season_number}` : 'TV') : 'Movie';
 
   return (
     <Link
@@ -48,7 +50,7 @@ export default function TitleCard({ title }) {
           )
         )}
         <span className="absolute top-2 left-2 rounded-md bg-violet/90 px-1.5 py-0.5 text-[11px] font-medium text-bone">
-          {type === 'tv' ? 'TV' : 'Movie'}
+          {badge}
         </span>
       </div>
       <div className="p-3">

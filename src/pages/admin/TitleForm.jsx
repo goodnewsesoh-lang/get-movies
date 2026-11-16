@@ -9,10 +9,13 @@ import {
   mapTmdbResultToDraft,
   tmdbPosterUrl,
   fetchTmdbExtras,
+  fetchTmdbSeasonList,
+  fetchTmdbSeasonData,
 } from '../../lib/tmdb.js';
 import { fetchOmdbRatings } from '../../lib/omdb.js';
 import { createTitle, updateTitle, fetchTitleById, uploadImage } from '../../lib/titles.js';
 import { replaceCastForMovie } from '../../lib/cast.js';
+import { findSeasonEntry } from '../../lib/seasons.js';
 
 const emptyForm = {
   title: '',
@@ -41,6 +44,9 @@ const emptyForm = {
   languages: [],
   writers: [],
   producers: [],
+  season_number: '',
+  series_tmdb_id: null,
+  episode_count: '',
 };
 
 export default function TitleForm() {
@@ -55,6 +61,9 @@ export default function TitleForm() {
   const [tmdbGenreLookup, setTmdbGenreLookup] = useState({});
   const [galleryFromTmdb, setGalleryFromTmdb] = useState([]);
   const [pendingCast, setPendingCast] = useState([]);
+  const [lastResult, setLastResult] = useState(null);
+  const [seriesInfo, setSeriesInfo] = useState(null);
+  const [seasonChoice, setSeasonChoice] = useState('');
   const [loadingExtras, setLoadingExtras] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -73,6 +82,8 @@ export default function TitleForm() {
           producers: t.producers ?? [],
           scheduled_at: t.scheduled_at ? t.scheduled_at.slice(0, 16) : '',
           unlock_at: t.unlock_at ? t.unlock_at.slice(0, 16) : '',
+          season_number: t.season_number ?? '',
+          episode_count: t.episode_count ?? '',
         })
       );
     }
@@ -95,15 +106,27 @@ export default function TitleForm() {
       const results = await searchTmdb(tmdbQuery.trim(), form.type);
       setTmdbResults(results.slice(0, 6));
     } catch {
-      setError('TMDB search failed — check your API token in src/config.js');
+      setError('TMDB search failed. Check your API token in src/config.js');
     }
   };
 
-  const applyTmdbResult = async (result) => {
+  const fillOmdb = async (imdbId) => {
+    if (!imdbId) return;
+    const omdb = await fetchOmdbRatings(imdbId);
+    if (omdb) {
+      setForm((f) => ({
+        ...f,
+        imdb_rating: omdb.imdb_rating || '',
+        rotten_tomatoes_rating: omdb.rotten_tomatoes_rating || '',
+        metacritic_rating: omdb.metacritic_rating || '',
+      }));
+    }
+  };
+
+  // Load the whole movie or whole series
+  const loadWholeSeries = async (result) => {
     const draft = mapTmdbResultToDraft(result, form.type, tmdbGenreLookup);
-    setForm((f) => ({ ...f, ...draft }));
-    setTmdbResults([]);
-    setTmdbQuery('');
+    setForm((f) => ({ ...f, ...draft, season_number: '', series_tmdb_id: null, episode_count: '' }));
 
     setLoadingExtras(true);
     try {
@@ -118,26 +141,71 @@ export default function TitleForm() {
         producers: extras.producers ?? [],
         trailer_url: extras.trailerUrl || f.trailer_url,
         imdb_id: extras.imdbId || '',
+        imdb_rating: '',
+        rotten_tomatoes_rating: '',
+        metacritic_rating: '',
       }));
       setGalleryFromTmdb(extras.galleryImages ?? []);
       setPendingCast(extras.cast ?? []);
-
-      if (extras.imdbId) {
-        const omdb = await fetchOmdbRatings(extras.imdbId);
-        if (omdb) {
-          setForm((f) => ({
-            ...f,
-            imdb_rating: omdb.imdb_rating || '',
-            rotten_tomatoes_rating: omdb.rotten_tomatoes_rating || '',
-            metacritic_rating: omdb.metacritic_rating || '',
-          }));
-        }
-      }
+      await fillOmdb(extras.imdbId);
     } catch {
       // extras are a bonus, don't block the form if they fail
     } finally {
       setLoadingExtras(false);
     }
+  };
+
+  // Load one season of a series as its own entry
+  const loadSeason = async (seriesId, seasonNumber) => {
+    setLoadingExtras(true);
+    setError(null);
+    try {
+      const { draft, extras } = await fetchTmdbSeasonData(seriesId, seasonNumber);
+      setForm((f) => ({
+        ...f,
+        ...draft,
+        runtime: extras.runtime ?? '',
+        director: extras.director ?? '',
+        country: extras.country ?? '',
+        languages: extras.languages ?? [],
+        writers: extras.writers ?? [],
+        producers: extras.producers ?? [],
+        trailer_url: extras.trailerUrl || '',
+        imdb_id: extras.imdbId || '',
+        imdb_rating: '',
+        rotten_tomatoes_rating: '',
+        metacritic_rating: '',
+      }));
+      setGalleryFromTmdb(extras.galleryImages ?? []);
+      setPendingCast(extras.cast ?? []);
+      await fillOmdb(extras.imdbId);
+    } catch {
+      setError('Could not load that season from TMDB.');
+    } finally {
+      setLoadingExtras(false);
+    }
+  };
+
+  const applyTmdbResult = async (result) => {
+    setTmdbResults([]);
+    setTmdbQuery('');
+    setLastResult(result);
+    setSeasonChoice('');
+    setSeriesInfo(null);
+    if (form.type === 'tv') {
+      fetchTmdbSeasonList(result.id).then(setSeriesInfo).catch(() => {});
+    }
+    await loadWholeSeries(result);
+  };
+
+  const chooseSeason = async (value) => {
+    setSeasonChoice(value);
+    if (!lastResult) return;
+    if (value === '') {
+      await loadWholeSeries(lastResult);
+      return;
+    }
+    await loadSeason(lastResult.id, Number(value));
   };
 
   const addGenre = () => {
@@ -160,7 +228,7 @@ export default function TitleForm() {
       const url = await uploadImage(file, field === 'poster_url' ? 'posters' : 'backdrops');
       setForm((f) => ({ ...f, [field]: url }));
     } catch {
-      setError('Image upload failed — check your Supabase Storage bucket is set up.');
+      setError('Image upload failed. Check your Supabase Storage bucket is set up.');
     } finally {
       setUploading(null);
     }
@@ -170,6 +238,10 @@ export default function TitleForm() {
     e.preventDefault();
     setSaving(true);
     setError(null);
+
+    const isTv = form.type === 'tv';
+    const isSeason = isTv && form.season_number !== '' && form.season_number != null;
+
     const payload = {
       ...form,
       year: form.year ? Number(form.year) : null,
@@ -177,8 +249,20 @@ export default function TitleForm() {
       runtime: form.runtime === '' ? null : Number(form.runtime),
       scheduled_at: form.scheduled_at ? new Date(form.scheduled_at).toISOString() : null,
       unlock_at: form.unlock_at ? new Date(form.unlock_at).toISOString() : null,
+      season_number: isSeason ? Number(form.season_number) : null,
+      episode_count: isTv && form.episode_count !== '' && form.episode_count != null ? Number(form.episode_count) : null,
+      series_tmdb_id: isSeason ? form.series_tmdb_id ?? form.tmdb_id ?? null : null,
     };
+
     try {
+      if (payload.season_number != null && payload.series_tmdb_id) {
+        const existing = await findSeasonEntry(payload.series_tmdb_id, payload.season_number);
+        if (existing && String(existing.id) !== String(id)) {
+          setError(`Season ${payload.season_number} of this series is already in your library as "${existing.title}".`);
+          return;
+        }
+      }
+
       let savedId = id;
       if (isEdit) {
         await updateTitle(id, payload);
@@ -195,7 +279,11 @@ export default function TitleForm() {
       }
       navigate('/admin/titles');
     } catch (err) {
-      setError(err.message);
+      if (String(err.message).includes('movies_season_unique')) {
+        setError('That season of this series is already in your library.');
+      } else {
+        setError(err.message);
+      }
     } finally {
       setSaving(false);
     }
@@ -243,6 +331,29 @@ export default function TitleForm() {
             ))}
           </div>
         )}
+
+        {seriesInfo && seriesInfo.seasons.length > 0 && (
+          <div className="mt-4">
+            <label className="block text-sm text-mute mb-1">What are you adding from "{seriesInfo.name}"?</label>
+            <select
+              value={seasonChoice}
+              onChange={(e) => chooseSeason(e.target.value)}
+              className="w-full bg-panel2 border border-line rounded-lg px-3 py-2 text-sm text-bone"
+            >
+              <option value="">The whole series</option>
+              {seriesInfo.seasons.map((s) => (
+                <option key={s.season_number} value={s.season_number}>
+                  Season {s.season_number}
+                  {s.air_date ? ` · ${s.air_date}` : ' · date not set'}
+                  {s.episode_count ? ` · ${s.episode_count} episodes` : ''}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-mute mt-1">
+              Pick a season to add it on its own, with its own poster, overview, date, trailer and cast.
+            </p>
+          </div>
+        )}
       </div>
 
       {error && <p className="text-sm text-red-400 mb-4">{error}</p>}
@@ -278,6 +389,32 @@ export default function TitleForm() {
             />
           </div>
         </div>
+
+        {form.type === 'tv' && (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-mute mb-1">Season number</label>
+              <input
+                type="number"
+                min="1"
+                value={form.season_number}
+                onChange={(e) => setForm((f) => ({ ...f, season_number: e.target.value }))}
+                placeholder="Empty = whole series"
+                className="w-full bg-panel border border-line rounded-lg px-3 py-2 text-bone"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-mute mb-1">Episodes</label>
+              <input
+                type="number"
+                min="0"
+                value={form.episode_count}
+                onChange={(e) => setForm((f) => ({ ...f, episode_count: e.target.value }))}
+                className="w-full bg-panel border border-line rounded-lg px-3 py-2 text-bone"
+              />
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -478,11 +615,11 @@ export default function TitleForm() {
             }
             className="w-full max-w-xs bg-panel border border-line rounded-lg px-3 py-2 text-bone"
           />
-          <p className="text-xs text-mute mt-1">Leave blank to publish immediately based on the toggle above. Setting a time automatically unchecks Published — it flips on by itself once that time passes.</p>
+          <p className="text-xs text-mute mt-1">Leave blank to publish immediately based on the toggle above. Setting a time automatically unchecks Published, and it flips on by itself once that time passes.</p>
         </div>
 
         <div>
-          <label className="block text-sm text-mute mb-1">Coming Soon — unlock date/time (optional)</label>
+          <label className="block text-sm text-mute mb-1">Coming Soon: unlock date/time (optional)</label>
           <input
             type="datetime-local"
             value={form.unlock_at || ''}

@@ -9,6 +9,7 @@ import { fetchTitleById } from '../lib/titles.js';
 import { fetchScreenshots } from '../lib/gallery.js';
 import { fetchSimilarTitles } from '../lib/similarTitles.js';
 import { fetchCastForMovie } from '../lib/cast.js';
+import { fetchSeasonSiblings } from '../lib/seasons.js';
 
 function InfoRow({ label, value }) {
   if (!value || (Array.isArray(value) && value.length === 0)) return null;
@@ -28,17 +29,20 @@ export default function TitleDetails() {
   const [gallery, setGallery] = useState([]);
   const [similar, setSimilar] = useState([]);
   const [cast, setCast] = useState([]);
+  const [seasons, setSeasons] = useState([]);
   const [lightbox, setLightbox] = useState(null);
 
   useEffect(() => {
     setTitle(null);
     setError(null);
+    setSeasons([]);
     fetchTitleById(id)
       .then((t) => {
         setTitle(t);
         fetchScreenshots(t.id).then(setGallery);
         fetchSimilarTitles(t.id).then(setSimilar);
         fetchCastForMovie(t.id).then(setCast);
+        fetchSeasonSiblings(t).then(setSeasons).catch(() => {});
       })
       .catch((e) => setError(e.message));
   }, [id]);
@@ -48,6 +52,7 @@ export default function TitleDetails() {
 
   const isLocked = title.unlock_at && new Date(title.unlock_at) > new Date();
   const runtimeLabel = title.runtime ? `${Math.floor(title.runtime / 60)}h ${title.runtime % 60}m` : null;
+  const isSeason = title.season_number != null;
 
   if (isLocked) {
     return (
@@ -86,16 +91,24 @@ export default function TitleDetails() {
             className="w-40 md:w-56 rounded-xl border border-line shrink-0 self-start shadow-glow"
           />
           <div className="pt-2 md:pt-24 flex-1">
-            {title.featured && (
-              <span className="inline-block mb-2 text-xs font-medium text-violet-bright bg-violet-dim/40 border border-violet/40 rounded-full px-3 py-1">
-                Featured
-              </span>
-            )}
+            <div className="flex flex-wrap gap-2 mb-2">
+              {title.featured && (
+                <span className="inline-block text-xs font-medium text-violet-bright bg-violet-dim/40 border border-violet/40 rounded-full px-3 py-1">
+                  Featured
+                </span>
+              )}
+              {isSeason && (
+                <span className="inline-block text-xs font-medium text-bone bg-violet/80 rounded-full px-3 py-1">
+                  Season {title.season_number}
+                </span>
+              )}
+            </div>
             <h1 className="font-display text-3xl md:text-4xl text-bone">{title.title}</h1>
             <p className="text-mute mt-2 text-sm">
               {title.year}
               {title.rating != null ? ` · ★ ${title.rating}` : ''}
               {runtimeLabel ? ` · ${runtimeLabel}` : ''}
+              {isSeason && title.episode_count ? ` · ${title.episode_count} episodes` : ''}
               {title.platform ? ` · ${title.platform}` : ''}
             </p>
 
@@ -134,6 +147,8 @@ export default function TitleDetails() {
             )}
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-8 max-w-xl">
+              <InfoRow label="Season" value={isSeason ? `Season ${title.season_number}` : null} />
+              <InfoRow label="Episodes" value={isSeason && title.episode_count ? String(title.episode_count) : null} />
               <InfoRow label="Director" value={title.director} />
               <InfoRow label="Release date" value={title.release_date} />
               <InfoRow label="Country" value={title.country} />
@@ -143,6 +158,17 @@ export default function TitleDetails() {
             </div>
           </div>
         </div>
+
+        {seasons.length > 0 && (
+          <div className="mt-12">
+            <h2 className="font-display text-xl text-bone mb-4">{isSeason ? 'Other seasons' : 'Seasons'}</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {seasons.map((s) => (
+                <TitleCard key={s.id} title={s} />
+              ))}
+            </div>
+          </div>
+        )}
 
         {title.tmdb_id && (
           <div className="mt-12">

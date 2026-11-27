@@ -28,11 +28,11 @@ export default function Home() {
         builtIn.map(async (s) => {
           let titles = [];
           if (s.key === 'latest_movies') {
-            titles = await fetchTitles({ type: 'movie', sort: 'newest', limit: 12 });
+            titles = await fetchTitles({ type: 'movie', sort: 'newest', excludeHidden: true, limit: 12 });
           } else if (s.key === 'latest_tv') {
-            titles = await fetchTitles({ type: 'tv', sort: 'newest', limit: 12 });
+            titles = await fetchTitles({ type: 'tv', sort: 'newest', excludeHidden: true, limit: 12 });
           } else if (s.key === 'recommended') {
-            titles = await fetchTitles({ sort: 'rating', limit: 12 });
+            titles = await fetchTitles({ sort: 'rating', excludeHidden: true, limit: 12 });
           }
           return { kind: 'builtin', key: s.key, label: s.label, position: s.position, titles };
         })

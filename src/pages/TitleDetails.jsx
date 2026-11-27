@@ -40,7 +40,7 @@ export default function TitleDetails() {
       .then((t) => {
         setTitle(t);
         fetchScreenshots(t.id).then(setGallery);
-        fetchSimilarTitles(t.id).then(setSimilar);
+        fetchSimilarTitles(t.id).then((list) => setSimilar(list.filter((x) => x.published !== false)));
         fetchCastForMovie(t.id).then(setCast);
         fetchSeasonSiblings(t).then(setSeasons).catch(() => {});
       })

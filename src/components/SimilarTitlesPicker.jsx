@@ -7,12 +7,16 @@ import {
 } from '../lib/similarTitles.js';
 import { fetchTmdbSimilar, tmdbPosterUrl } from '../lib/tmdb.js';
 import { fetchAllTitlesForAdmin } from '../lib/titles.js';
+import { importAndLinkSimilar } from '../lib/importTitle.js';
 
 export default function SimilarTitlesPicker({ movieId, tmdbId, type }) {
   const [similar, setSimilar] = useState([]);
   const [suggestions, setSuggestions] = useState(null); // { inLibrary: [...], missing: [...] }
   const [allMovies, setAllMovies] = useState([]);
   const [query, setQuery] = useState('');
+  const [publishNew, setPublishNew] = useState(false); // false = add as draft
+  const [adding, setAdding] = useState({}); // tmdb id -> true while importing
+  const [notice, setNotice] = useState('');
 
   const load = () => fetchSimilarTitles(movieId).then(setSimilar);
 
@@ -37,6 +41,27 @@ export default function SimilarTitlesPicker({ movieId, tmdbId, type }) {
     await addSimilarTitle(movieId, movie.id, similar.length);
     setSuggestions((s) => s && { ...s, inLibrary: s.inLibrary.filter((m) => m.id !== movie.id) });
     load();
+  };
+
+  const addMissing = async (r) => {
+    setNotice('');
+    setAdding((a) => ({ ...a, [r.id]: true }));
+    try {
+      const outcome = await importAndLinkSimilar(movieId, r, type, publishNew, similar.length);
+      setSuggestions((s) => s && { ...s, missing: s.missing.filter((m) => m.id !== r.id) });
+      await load();
+      const name = r.title || r.name;
+      const warn = outcome.warnings.length ? ` (${outcome.warnings.join(' ')})` : '';
+      setNotice(
+        outcome.alreadyExisted
+          ? `"${name}" was already in your library, so it was linked as similar.`
+          : `Added "${name}" as ${publishNew ? 'published' : 'a draft'} and linked it as similar.${warn}`
+      );
+    } catch (err) {
+      setNotice(`Could not add "${r.title || r.name}": ${err.message}`);
+    } finally {
+      setAdding((a) => ({ ...a, [r.id]: false }));
+    }
   };
 
   const remove = async (movieIdToRemove) => {
@@ -76,6 +101,8 @@ export default function SimilarTitlesPicker({ movieId, tmdbId, type }) {
         </button>
       )}
 
+      {notice && <p className="text-sm text-bone bg-panel border border-line rounded-lg px-3 py-2 mb-3">{notice}</p>}
+
       {suggestions && (
         <div className="mb-4 space-y-4">
           {suggestions.inLibrary.length > 0 && (
@@ -97,12 +124,24 @@ export default function SimilarTitlesPicker({ movieId, tmdbId, type }) {
           )}
           {suggestions.missing.length > 0 && (
             <div>
-              <p className="text-sm text-mute mb-2">Not in your library yet — add these via Add Title first if you want them</p>
-              <div className="flex flex-wrap gap-2">
+              <p className="text-sm text-mute mb-2">Not in your library yet. Tap Add to import the full title and link it.</p>
+              <label className="flex items-center gap-2 text-xs text-mute mb-2">
+                <input type="checkbox" checked={publishNew} onChange={(e) => setPublishNew(e.target.checked)} />
+                Publish new titles straight away (leave unticked to add them as drafts)
+              </label>
+              <div className="space-y-2">
                 {suggestions.missing.map((r) => (
-                  <div key={r.id} className="flex items-center gap-2 bg-ink border border-line rounded-lg px-2 py-1 opacity-70">
-                    {r.poster_path && <img src={tmdbPosterUrl(r.poster_path, 'w92')} alt="" className="w-6 h-8 object-cover rounded" />}
-                    <span className="text-xs text-mute">{r.title || r.name}</span>
+                  <div key={r.id} className="flex items-center gap-3 bg-ink border border-line rounded-lg px-2 py-1.5">
+                    {r.poster_path && <img src={tmdbPosterUrl(r.poster_path, 'w92')} alt="" className="w-8 h-11 object-cover rounded" />}
+                    <span className="text-sm text-bone flex-1">{r.title || r.name}</span>
+                    <button
+                      type="button"
+                      disabled={adding[r.id]}
+                      onClick={() => addMissing(r)}
+                      className="bg-violet text-bone text-xs px-3 py-1.5 rounded-lg disabled:opacity-50"
+                    >
+                      {adding[r.id] ? 'Adding…' : 'Add'}
+                    </button>
                   </div>
                 ))}
               </div>

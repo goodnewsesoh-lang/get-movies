@@ -21,6 +21,7 @@ const exploreLinks = [
 const featureLinks = [
   { to: '/recommend', label: 'Recommend a Movie' },
   { to: '/movie-finder', label: 'Movie Finder', badge: 'Soon' },
+  { to: '/how-it-works', label: 'How it works' },
   { to: '/contact', label: 'Contact' },
 ];
 
@@ -165,6 +166,7 @@ export default function Footer() {
 
       <div className="max-w-6xl mx-auto px-4 pb-8 text-xs text-mute space-y-1">
         <p>© {new Date().getFullYear()} Get Movies. All rights reserved.</p>
+        <p>Recommendations are never paid for. Any ads or affiliate links will be clearly labelled.</p>
         <p>This website uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.</p>
       </div>
     </footer>

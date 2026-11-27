@@ -20,6 +20,7 @@ import ActorDetail from './pages/ActorDetail.jsx';
 import Privacy from './pages/Privacy.jsx';
 import Terms from './pages/Terms.jsx';
 import Dmca from './pages/Dmca.jsx';
+import HowItWorks from './pages/HowItWorks.jsx';
 import Recommend from './pages/Recommend.jsx';
 import MovieFinder from './pages/MovieFinder.jsx';
 
@@ -72,6 +73,7 @@ export default function App() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/dmca" element={<Dmca />} />
+          <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/recommend" element={<Recommend />} />
           <Route path="/movie-finder" element={<MovieFinder />} />
 

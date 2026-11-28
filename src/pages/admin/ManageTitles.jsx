@@ -8,6 +8,7 @@ export default function ManageTitles() {
   const [query, setQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [featuredFilter, setFeaturedFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [confirmId, setConfirmId] = useState(null);
 
   const load = () => fetchAllTitlesForAdmin().then(setTitles);
@@ -32,7 +33,11 @@ export default function ManageTitles() {
     const matchesType = !typeFilter || t.type === typeFilter;
     const matchesFeatured =
       !featuredFilter || (featuredFilter === 'featured' ? t.featured : !t.featured);
-    return matchesQuery && matchesType && matchesFeatured;
+    const matchesStatus =
+      !statusFilter ||
+      (statusFilter === 'drafts' && !t.published) ||
+      (statusFilter === 'bot' && t.auto_suggested && !t.published);
+    return matchesQuery && matchesType && matchesFeatured && matchesStatus;
   });
 
   return (
@@ -63,6 +68,15 @@ export default function ManageTitles() {
           <option value="featured">Featured only</option>
           <option value="not-featured">Not featured</option>
         </select>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="bg-panel border border-line rounded-lg px-3 py-2 text-sm text-bone"
+        >
+          <option value="">Published and drafts</option>
+          <option value="drafts">Drafts only</option>
+          <option value="bot">Bot suggestions to review</option>
+        </select>
       </div>
 
       {titles === null && <p className="text-mute">Loading…</p>}
@@ -92,7 +106,12 @@ export default function ManageTitles() {
                       <div className="w-10 h-14 bg-panel2 rounded" />
                     )}
                   </td>
-                  <td className="py-2 pr-3 text-bone">{t.title}</td>
+                  <td className="py-2 pr-3 text-bone">
+                    {t.title}
+                    {t.auto_suggested && (
+                      <span className="ml-2 text-[10px] text-violet-bright border border-violet/40 rounded-full px-2 py-0.5">Bot</span>
+                    )}
+                  </td>
                   <td className="py-2 pr-3 text-mute">{t.type === 'tv' ? 'TV' : 'Movie'}</td>
                   <td className="py-2 pr-3 text-mute">{t.year}</td>
                   <td className="py-2 pr-3 text-mute">{t.rating ?? '—'}</td>

@@ -165,6 +165,69 @@ async function saveExtras(supabase, movieId, extras, omdb) {
   }
 }
 
+// ---- Similar-title suggestions (bot pass 4) ----
+const DAILY_IMPORT_CAP = 10; // most NEW draft titles the bot may add per day (UTC)
+const SIMILAR_TARGET = 5; // aim for this many similar titles per title
+const MAX_SOURCES_PER_RUN = 40;
+
+async function tmdbSimilar(tmdbId, type) {
+  const endpoint = type === 'tv' ? 'tv' : 'movie';
+  const res = await fetch(`${TMDB_BASE}/${endpoint}/${tmdbId}/similar`, { headers: tmdbHeaders() });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.results ?? [];
+}
+
+const genreCache = {};
+async function tmdbGenreMap(type) {
+  if (genreCache[type]) return genreCache[type];
+  const endpoint = type === 'tv' ? 'genre/tv/list' : 'genre/movie/list';
+  const res = await fetch(`${TMDB_BASE}/${endpoint}`, { headers: tmdbHeaders() });
+  const map = {};
+  if (res.ok) {
+    const data = await res.json();
+    (data.genres ?? []).forEach((g) => (map[g.id] = g.name));
+  }
+  genreCache[type] = map;
+  return map;
+}
+
+// Saves one TMDB suggestion as a DRAFT (never published by the bot). Returns the new movie id.
+async function importSuggestionAsDraft(supabase, result, type) {
+  const genres = await tmdbGenreMap(type);
+  const date = type === 'tv' ? result.first_air_date : result.release_date;
+  const { data: created, error } = await supabase
+    .from('movies')
+    .insert({
+      type,
+      title: type === 'tv' ? result.name : result.title,
+      year: date ? Number(date.slice(0, 4)) : null,
+      release_date: date || null,
+      overview: result.overview || null,
+      rating: result.vote_average ? Number(result.vote_average.toFixed(1)) : null,
+      genres: (result.genre_ids ?? []).map((id) => genres[id]).filter(Boolean),
+      poster_url: result.poster_path ? `${IMG_BASE}/w500${result.poster_path}` : null,
+      backdrop_url: backdropUrl(result.backdrop_path),
+      tmdb_id: result.id,
+      featured: false,
+      published: false,
+      auto_suggested: true,
+    })
+    .select('id')
+    .single();
+  if (error) throw error;
+
+  // Cast, gallery, trailer, critic scores. If this fails, pass 2 fills it in on a later run.
+  try {
+    const extras = await tmdbExtras(result.id, type);
+    const omdb = await safeOmdb(extras.imdbId);
+    await saveExtras(supabase, created.id, extras, omdb);
+  } catch {
+    // keep the draft with its basic details
+  }
+  return created.id;
+}
+
 export default async function handler(req, res) {
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
@@ -201,6 +264,8 @@ export default async function handler(req, res) {
 
   let processed = 0;
   let scoresFound = 0;
+  let newDrafts = 0;
+  let linksAdded = 0;
   let total = 0;
   const errors = [];
 
@@ -303,6 +368,110 @@ export default async function handler(req, res) {
       }
     }
 
+    // Pass 4: suggest about 5 similar titles for each published title.
+    // Uses titles already in your library first, then TMDB suggestions saved as DRAFTS.
+    // Stops for the day once DAILY_IMPORT_CAP new drafts have been added.
+    if (timeLeft()) {
+      const startOfDay = new Date();
+      startOfDay.setUTCHours(0, 0, 0, 0);
+      const { count: importedToday } = await supabase
+        .from('movies')
+        .select('*', { count: 'exact', head: true })
+        .eq('auto_suggested', true)
+        .gte('created_at', startOfDay.toISOString());
+      let importsLeft = Math.max(0, DAILY_IMPORT_CAP - (importedToday ?? 0));
+
+      const { data: sources } = await supabase
+        .from('movies')
+        .select('id, tmdb_id, type')
+        .eq('published', true)
+        .not('tmdb_id', 'is', null)
+        .is('season_number', null)
+        .is('similar_checked_at', null)
+        .order('id', { ascending: true })
+        .limit(MAX_SOURCES_PER_RUN);
+      total += sources?.length ?? 0;
+
+      for (const src of sources ?? []) {
+        if (!timeLeft()) break;
+        try {
+          const markChecked = () =>
+            supabase.from('movies').update({ similar_checked_at: new Date().toISOString() }).eq('id', src.id);
+
+          const { data: links } = await supabase.from('similar_titles').select('similar_movie_id').eq('movie_id', src.id);
+          const linked = new Set((links ?? []).map((l) => l.similar_movie_id));
+          let need = SIMILAR_TARGET - linked.size;
+          if (need <= 0) {
+            await markChecked();
+            continue;
+          }
+
+          const results = (await tmdbSimilar(src.tmdb_id, src.type)).filter(
+            (r) => r.poster_path && r.id !== src.tmdb_id
+          );
+          const ids = results.map((r) => r.id);
+          let ownedByTmdb = new Map();
+          if (ids.length > 0) {
+            const { data: owned } = await supabase
+              .from('movies')
+              .select('id, tmdb_id')
+              .in('tmdb_id', ids)
+              .eq('type', src.type)
+              .is('season_number', null);
+            ownedByTmdb = new Map((owned ?? []).map((m) => [m.tmdb_id, m.id]));
+          }
+
+          const newLinks = [];
+          let position = linked.size;
+
+          // 1) titles you already have
+          for (const r of results) {
+            if (need <= 0) break;
+            const ownId = ownedByTmdb.get(r.id);
+            if (ownId && ownId !== src.id && !linked.has(ownId)) {
+              newLinks.push({ movie_id: src.id, similar_movie_id: ownId, position: position++ });
+              linked.add(ownId);
+              need--;
+            }
+          }
+
+          // 2) new drafts from TMDB, within the daily cap
+          const imported = new Set();
+          for (const r of results) {
+            if (need <= 0 || importsLeft <= 0 || !timeLeft()) break;
+            if (ownedByTmdb.has(r.id)) continue;
+            try {
+              const newId = await importSuggestionAsDraft(supabase, r, src.type);
+              newLinks.push({ movie_id: src.id, similar_movie_id: newId, position: position++ });
+              imported.add(r.id);
+              importsLeft--;
+              newDrafts++;
+              need--;
+            } catch (e) {
+              errors.push(`Suggestion "${r.title || r.name}": ${e.message}`);
+            }
+          }
+
+          if (newLinks.length > 0) {
+            const { error: linkError } = await supabase.from('similar_titles').insert(newLinks);
+            if (linkError) throw linkError;
+            linksAdded += newLinks.length;
+          }
+
+          const leftover = results.some((r) => !ownedByTmdb.has(r.id) && !imported.has(r.id));
+          if (need > 0 && leftover && (importsLeft <= 0 || !timeLeft())) {
+            // Not finished: leave unmarked so it continues on the next run.
+            if (importsLeft <= 0) break;
+          } else {
+            await markChecked();
+          }
+          processed++;
+        } catch (e) {
+          errors.push(`Similar titles for movie #${src.id}: ${e.message}`);
+        }
+      }
+    }
+
     await supabase.from('jobs').update({
       status: errors.length > 0 ? 'done_with_errors' : 'done',
       processed_count: processed,
@@ -314,10 +483,10 @@ export default async function handler(req, res) {
     await supabase.from('bot_status').update({
       last_run_at: new Date().toISOString(),
       last_status: errors.length > 0 ? 'warning' : 'ok',
-      last_message: `Processed ${processed} of ${total} title(s). Critic scores found for ${scoresFound}.`,
+      last_message: `Processed ${processed} of ${total} title(s). Critic scores found for ${scoresFound}. Suggested ${newDrafts} new draft(s), linked ${linksAdded} similar title(s).`,
     }).eq('id', 1);
 
-    return res.status(200).json({ processed, total, scoresFound, errors });
+    return res.status(200).json({ processed, total, scoresFound, newDrafts, linksAdded, errors });
   } catch (e) {
     await supabase.from('jobs').update({
       status: 'failed',

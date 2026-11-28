@@ -126,7 +126,7 @@ export default function TitleForm() {
       const results = await searchTmdb(tmdbQuery.trim(), form.type);
       setTmdbResults(results.slice(0, 6));
     } catch {
-      setError('TMDB search failed. Check your API token in src/config.js');
+      setError('TMDB search failed. Make sure you are signed in and TMDB_TOKEN is set in Vercel.');
     }
   };
 

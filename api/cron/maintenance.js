@@ -169,6 +169,12 @@ async function saveExtras(supabase, movieId, extras, omdb) {
 const DAILY_IMPORT_CAP = 10; // most NEW draft titles the bot may add per day (UTC)
 const SIMILAR_TARGET = 5; // aim for this many similar titles per title
 const MAX_SOURCES_PER_RUN = 40;
+const RECENT_YEARS = 15; // new TMDB suggestions must be from the last 15 years
+
+function releaseYear(r) {
+  const d = r.release_date || r.first_air_date || '';
+  return d ? Number(d.slice(0, 4)) : null;
+}
 
 async function tmdbSimilar(tmdbId, type) {
   const endpoint = type === 'tv' ? 'tv' : 'movie';
@@ -435,11 +441,14 @@ export default async function handler(req, res) {
             }
           }
 
-          // 2) new drafts from TMDB, within the daily cap
+          // 2) new drafts from TMDB, newest first, only recent titles, within the daily cap
+          const minYear = new Date().getUTCFullYear() - RECENT_YEARS;
+          const importable = results
+            .filter((r) => !ownedByTmdb.has(r.id) && (releaseYear(r) ?? 0) >= minYear)
+            .sort((a, b) => (b.release_date || b.first_air_date || '').localeCompare(a.release_date || a.first_air_date || ''));
           const imported = new Set();
-          for (const r of results) {
+          for (const r of importable) {
             if (need <= 0 || importsLeft <= 0 || !timeLeft()) break;
-            if (ownedByTmdb.has(r.id)) continue;
             try {
               const newId = await importSuggestionAsDraft(supabase, r, src.type);
               newLinks.push({ movie_id: src.id, similar_movie_id: newId, position: position++ });
@@ -458,7 +467,7 @@ export default async function handler(req, res) {
             linksAdded += newLinks.length;
           }
 
-          const leftover = results.some((r) => !ownedByTmdb.has(r.id) && !imported.has(r.id));
+          const leftover = importable.some((r) => !imported.has(r.id));
           if (need > 0 && leftover && (importsLeft <= 0 || !timeLeft())) {
             // Not finished: leave unmarked so it continues on the next run.
             if (importsLeft <= 0) break;

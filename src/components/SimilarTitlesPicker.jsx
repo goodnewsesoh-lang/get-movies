@@ -6,7 +6,7 @@ import {
   findMoviesByTmdbIds,
 } from '../lib/similarTitles.js';
 import { fetchTmdbSimilar, tmdbPosterUrl } from '../lib/tmdb.js';
-import { fetchAllTitlesForAdmin } from '../lib/titles.js';
+import { fetchAllTitlesForAdmin, updateTitle } from '../lib/titles.js';
 import { importAndLinkSimilar } from '../lib/importTitle.js';
 
 export default function SimilarTitlesPicker({ movieId, tmdbId, type }) {
@@ -64,6 +64,17 @@ export default function SimilarTitlesPicker({ movieId, tmdbId, type }) {
     }
   };
 
+  const publishDraft = async (m) => {
+    setNotice('');
+    try {
+      await updateTitle(m.id, { published: true });
+      setNotice(`"${m.title}" is now published.`);
+      await load();
+    } catch (err) {
+      setNotice(`Could not publish "${m.title}": ${err.message}`);
+    }
+  };
+
   const remove = async (movieIdToRemove) => {
     await removeSimilarTitle(movieId, movieIdToRemove);
     load();
@@ -84,12 +95,29 @@ export default function SimilarTitlesPicker({ movieId, tmdbId, type }) {
         {similar.map((m) => (
           <div key={m.id} className="flex items-center gap-3 bg-panel border border-line rounded-lg px-3 py-2">
             {m.poster_url && <img src={m.poster_url} alt="" className="w-8 h-11 object-cover rounded" />}
-            <span className="text-bone text-sm flex-1">{m.title}</span>
+            <span className="text-bone text-sm flex-1">
+              {m.title}
+              {m.published === false && (
+                <span className="ml-2 text-[10px] text-mute border border-line rounded-full px-2 py-0.5">Draft</span>
+              )}
+            </span>
+            {m.published === false && (
+              <button type="button" onClick={() => publishDraft(m)} className="text-violet-bright text-xs mr-1">
+                Publish
+              </button>
+            )}
             <button onClick={() => remove(m.id)} className="text-red-400 text-xs">Remove</button>
           </div>
         ))}
         {similar.length === 0 && <p className="text-mute text-sm">No similar titles picked yet.</p>}
       </div>
+
+      {tmdbId && (
+        <label className="flex items-center gap-2 text-xs text-mute mb-2">
+          <input type="checkbox" checked={publishNew} onChange={(e) => setPublishNew(e.target.checked)} />
+          Publish new titles straight away (leave unticked to add them as drafts)
+        </label>
+      )}
 
       {tmdbId && (
         <button
@@ -125,10 +153,6 @@ export default function SimilarTitlesPicker({ movieId, tmdbId, type }) {
           {suggestions.missing.length > 0 && (
             <div>
               <p className="text-sm text-mute mb-2">Not in your library yet. Tap Add to import the full title and link it.</p>
-              <label className="flex items-center gap-2 text-xs text-mute mb-2">
-                <input type="checkbox" checked={publishNew} onChange={(e) => setPublishNew(e.target.checked)} />
-                Publish new titles straight away (leave unticked to add them as drafts)
-              </label>
               <div className="space-y-2">
                 {suggestions.missing.map((r) => (
                   <div key={r.id} className="flex items-center gap-3 bg-ink border border-line rounded-lg px-2 py-1.5">

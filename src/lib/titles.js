@@ -11,6 +11,7 @@ export async function fetchTitles({
   sort = 'newest',
   search,
   featuredOnly = false,
+  excludeHidden = false,
   limit = 60,
 } = {}) {
   let query = supabase.from(TABLE).select('*').eq('published', true);
@@ -18,6 +19,7 @@ export async function fetchTitles({
   if (type) query = query.eq('type', type);
   if (year) query = query.eq('year', year);
   if (featuredOnly) query = query.eq('featured', true);
+  if (excludeHidden) query = query.eq('hide_from_main', false);
   if (genre) query = query.overlaps('genres', genreVariants(genre));
   if (search) query = query.ilike('title', `%${search}%`);
 

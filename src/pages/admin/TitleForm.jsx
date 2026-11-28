@@ -15,6 +15,11 @@ import {
 import { fetchOmdbRatings } from '../../lib/omdb.js';
 import { createTitle, updateTitle, fetchTitleById, uploadImage } from '../../lib/titles.js';
 import { replaceCastForMovie } from '../../lib/cast.js';
+import {
+  fetchAllCollectionsForAdmin,
+  fetchCollectionIdsForMovie,
+  syncMovieCollections,
+} from '../../lib/collections.js';
 import { findSeasonEntry } from '../../lib/seasons.js';
 
 const emptyForm = {
@@ -31,6 +36,7 @@ const emptyForm = {
   trailer_url: '',
   featured: false,
   published: true,
+  hide_from_main: false,
   scheduled_at: '',
   unlock_at: '',
   tmdb_id: null,
@@ -68,6 +74,8 @@ export default function TitleForm() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [uploading, setUploading] = useState(null);
+  const [allCollections, setAllCollections] = useState([]);
+  const [selectedCollections, setSelectedCollections] = useState([]);
 
   useEffect(() => {
     if (isEdit) {
@@ -88,6 +96,18 @@ export default function TitleForm() {
       );
     }
   }, [id, isEdit]);
+
+  useEffect(() => {
+    fetchAllCollectionsForAdmin().then(setAllCollections).catch(() => {});
+    if (isEdit) {
+      fetchCollectionIdsForMovie(id).then(setSelectedCollections).catch(() => {});
+    }
+  }, [id, isEdit]);
+
+  const toggleCollection = (collectionId) =>
+    setSelectedCollections((list) =>
+      list.includes(collectionId) ? list.filter((c) => c !== collectionId) : [...list, collectionId]
+    );
 
   useEffect(() => {
     getTmdbGenres(form.type)
@@ -273,6 +293,7 @@ export default function TitleForm() {
       if (pendingCast.length > 0) {
         await replaceCastForMovie(savedId, pendingCast);
       }
+      await syncMovieCollections(savedId, selectedCollections);
       if (!isEdit) {
         navigate(`/admin/titles/${savedId}/edit`);
         return;
@@ -599,6 +620,42 @@ export default function TitleForm() {
             />
             Published
           </label>
+        </div>
+
+        <div className="bg-panel border border-line rounded-xl p-4 space-y-3">
+          <div>
+            <p className="text-sm text-bone mb-1">Add to collections</p>
+            {allCollections.length === 0 && <p className="text-xs text-mute">You have no collections yet.</p>}
+            <div className="flex flex-wrap gap-2">
+              {allCollections.map((c) => (
+                <label
+                  key={c.id}
+                  className={`flex items-center gap-2 text-sm px-3 py-1.5 rounded-full border cursor-pointer ${
+                    selectedCollections.includes(c.id) ? 'border-violet text-violet-bright' : 'border-line text-mute'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    className="hidden"
+                    checked={selectedCollections.includes(c.id)}
+                    onChange={() => toggleCollection(c.id)}
+                  />
+                  {c.name}
+                </label>
+              ))}
+            </div>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-bone">
+            <input
+              type="checkbox"
+              checked={Boolean(form.hide_from_main)}
+              onChange={(e) => setForm((f) => ({ ...f, hide_from_main: e.target.checked }))}
+            />
+            Hide from the main homepage rows
+          </label>
+          <p className="text-xs text-mute">
+            When ticked, this title stays out of Newest Movies, Newest TV and Top Rated on the homepage. It still shows in its collections, in search and on its own page.
+          </p>
         </div>
 
         <div>

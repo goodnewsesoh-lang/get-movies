@@ -90,3 +90,31 @@ export async function reorderCollectionItem(collectionId, movieId, position) {
     .eq('movie_id', movieId);
   if (error) throw error;
          }
+
+// Which collections is this movie in? Returns a list of collection ids.
+export async function fetchCollectionIdsForMovie(movieId) {
+  const { data, error } = await supabase.from('collection_items').select('collection_id').eq('movie_id', movieId);
+  if (error) throw error;
+  return (data ?? []).map((r) => r.collection_id);
+}
+
+// Makes the movie belong to exactly the chosen collections: adds the new ones to the end, removes the unticked ones.
+export async function syncMovieCollections(movieId, selectedIds) {
+  const current = await fetchCollectionIdsForMovie(movieId);
+  const currentSet = new Set(current.map(String));
+  const selectedSet = new Set(selectedIds.map(String));
+
+  for (const collectionId of selectedIds) {
+    if (currentSet.has(String(collectionId))) continue;
+    const { count } = await supabase
+      .from('collection_items')
+      .select('*', { count: 'exact', head: true })
+      .eq('collection_id', collectionId);
+    await addMovieToCollection(collectionId, movieId, count ?? 0);
+  }
+  for (const collectionId of current) {
+    if (!selectedSet.has(String(collectionId))) {
+      await removeMovieFromCollection(collectionId, movieId);
+    }
+  }
+}

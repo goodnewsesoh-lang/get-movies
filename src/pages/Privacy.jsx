@@ -34,6 +34,11 @@ export default function Privacy() {
             We use it only to answer that request and we don't store it.
           </li>
           <li>
+            <strong>Movie Finder searches.</strong> When you describe a movie in Movie Finder, we store the text you typed
+            and a scrambled (hashed) version of your IP address, only to limit spam. The text may appear in the "recent
+            searches" list for other visitors, so please don't type personal details.
+          </li>
+          <li>
             <strong>Technical logs.</strong> Our hosting and database providers may record your IP address, browser type
             and the pages you request as part of normal operation and security.
           </li>
@@ -77,7 +82,8 @@ export default function Privacy() {
       <Section heading="How long we keep information">
         <p>
           Approved recommendations stay on the site until we remove them. Messages are kept only as long as we need them
-          to reply, and are then deleted. You can ask us to delete anything you sent us.
+          to reply, and are then deleted. Movie Finder searches are deleted automatically after about 3 months. You can ask us to delete
+          anything you sent us.
         </p>
       </Section>
 

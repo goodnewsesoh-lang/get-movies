@@ -20,7 +20,7 @@ const exploreLinks = [
 
 const featureLinks = [
   { to: '/recommend', label: 'Recommend a Movie' },
-  { to: '/movie-finder', label: 'Movie Finder', badge: 'Soon' },
+  { to: '/movie-finder', label: 'Movie Finder' },
   { to: '/contact', label: 'Contact' },
 ];
 

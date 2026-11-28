@@ -272,6 +272,8 @@ export default async function handler(req, res) {
   try {
     const nowIso = new Date().toISOString();
     await supabase.from('movies').update({ published: true }).eq('published', false).lte('scheduled_at', nowIso).not('scheduled_at', 'is', null);
+    // Movie Finder searches are kept for about 3 months only
+    await supabase.from('finder_searches').delete().lt('created_at', new Date(Date.now() - 90 * 86400000).toISOString());
     await supabase.from('announcements').update({ published: true }).eq('published', false).lte('scheduled_at', nowIso).not('scheduled_at', 'is', null);
 
     // Season entries are skipped in every pass below: they keep their own season data.

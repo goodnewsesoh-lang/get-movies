@@ -9,7 +9,7 @@ const items = [
   { to: '/genres', label: 'Genres', icon: 'genres' },
   { to: '/announcements', label: 'Announcements', icon: 'bell' },
   { to: '/recommend', label: 'Recommend a Movie', icon: 'heart' },
-  { to: '/movie-finder', label: 'Movie Finder', icon: 'find', badge: 'Soon' },
+  { to: '/movie-finder', label: 'Movie Finder', icon: 'find' },
   { to: '/about', label: 'About', icon: 'info' },
   { to: '/contact', label: 'Contact', icon: 'mail' },
 ];

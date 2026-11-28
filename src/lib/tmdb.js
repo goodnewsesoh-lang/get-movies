@@ -1,16 +1,28 @@
-import { TMDB_READ_ACCESS_TOKEN } from '../config.js';
+import { supabase } from './supabaseClient.js';
 
-const BASE_URL = 'https://api.themoviedb.org/3';
 const IMG_BASE = 'https://image.tmdb.org/t/p';
 
-const headers = {
-  Authorization: `Bearer ${TMDB_READ_ACCESS_TOKEN}`,
-  accept: 'application/json',
-};
+// All TMDB requests go through our own server function (/api/tmdb), which holds the private key.
+// Signed-in admins send their session so the server lets them use the admin-only paths.
+async function tmdbFetch(pathWithQuery) {
+  const [path, query = ''] = pathWithQuery.split('?');
+  const params = new URLSearchParams(query);
+  params.set('path', path);
+  let token = null;
+  try {
+    const { data } = await supabase.auth.getSession();
+    token = data?.session?.access_token ?? null;
+  } catch {
+    token = null;
+  }
+  return fetch(`/api/tmdb?${params.toString()}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+}
 
 export async function searchTmdb(query, type = 'movie') {
   const endpoint = type === 'tv' ? 'search/tv' : 'search/movie';
-  const res = await fetch(`${BASE_URL}/${endpoint}?query=${encodeURIComponent(query)}`, { headers });
+  const res = await tmdbFetch(`/${endpoint}?query=${encodeURIComponent(query)}`);
   if (!res.ok) throw new Error('TMDB search failed');
   const data = await res.json();
   return data.results ?? [];
@@ -18,7 +30,7 @@ export async function searchTmdb(query, type = 'movie') {
 
 export async function getTmdbGenres(type = 'movie') {
   const endpoint = type === 'tv' ? 'genre/tv/list' : 'genre/movie/list';
-  const res = await fetch(`${BASE_URL}/${endpoint}`, { headers });
+  const res = await tmdbFetch(`/${endpoint}`);
   if (!res.ok) throw new Error('TMDB genre list failed');
   const data = await res.json();
   return data.genres ?? [];
@@ -52,11 +64,11 @@ export function mapTmdbResultToDraft(result, type, genreLookup) {
 export async function fetchTmdbExtras(tmdbId, type = 'movie') {
   const endpoint = type === 'tv' ? 'tv' : 'movie';
   const [detailsRes, creditsRes, imagesRes, videosRes, externalRes] = await Promise.all([
-    fetch(`${BASE_URL}/${endpoint}/${tmdbId}`, { headers }),
-    fetch(`${BASE_URL}/${endpoint}/${tmdbId}/credits`, { headers }),
-    fetch(`${BASE_URL}/${endpoint}/${tmdbId}/images`, { headers }),
-    fetch(`${BASE_URL}/${endpoint}/${tmdbId}/videos`, { headers }),
-    type === 'tv' ? fetch(`${BASE_URL}/tv/${tmdbId}/external_ids`, { headers }) : Promise.resolve(null),
+    tmdbFetch(`/${endpoint}/${tmdbId}`),
+    tmdbFetch(`/${endpoint}/${tmdbId}/credits`),
+    tmdbFetch(`/${endpoint}/${tmdbId}/images`),
+    tmdbFetch(`/${endpoint}/${tmdbId}/videos`),
+    type === 'tv' ? tmdbFetch(`/tv/${tmdbId}/external_ids`) : Promise.resolve(null),
   ]);
   if (!detailsRes.ok) throw new Error('TMDB details fetch failed');
 
@@ -103,7 +115,7 @@ export async function fetchTmdbExtras(tmdbId, type = 'movie') {
 
 export async function fetchTmdbSimilar(tmdbId, type = 'movie') {
   const endpoint = type === 'tv' ? 'tv' : 'movie';
-  const res = await fetch(`${BASE_URL}/${endpoint}/${tmdbId}/similar`, { headers });
+  const res = await tmdbFetch(`/${endpoint}/${tmdbId}/similar`);
   if (!res.ok) throw new Error('TMDB similar fetch failed');
   const data = await res.json();
   return data.results ?? [];
@@ -111,8 +123,8 @@ export async function fetchTmdbSimilar(tmdbId, type = 'movie') {
 
 export async function fetchTmdbPerson(personId) {
   const [detailsRes, creditsRes] = await Promise.all([
-    fetch(`${BASE_URL}/person/${personId}`, { headers }),
-    fetch(`${BASE_URL}/person/${personId}/combined_credits`, { headers }),
+    tmdbFetch(`/person/${personId}`),
+    tmdbFetch(`/person/${personId}/combined_credits`),
   ]);
   if (!detailsRes.ok) throw new Error('TMDB person fetch failed');
 
@@ -143,7 +155,7 @@ export async function fetchTmdbPerson(personId) {
 
 // The list of seasons for a TV series (used to fill the Season dropdown).
 export async function fetchTmdbSeasonList(seriesId) {
-  const res = await fetch(`${BASE_URL}/tv/${seriesId}`, { headers });
+  const res = await tmdbFetch(`/tv/${seriesId}`);
   if (!res.ok) throw new Error('TMDB series fetch failed');
   const data = await res.json();
   return {
@@ -161,8 +173,8 @@ export async function fetchTmdbSeasonList(seriesId) {
 
 // Everything for ONE season: its own date, poster, overview, trailer, cast and episode stills.
 export async function fetchTmdbSeasonData(seriesId, seasonNumber) {
-  const base = `${BASE_URL}/tv/${seriesId}`;
-  const get = (path) => fetch(`${base}${path}`, { headers });
+  const base = `/tv/${seriesId}`;
+  const get = (path) => tmdbFetch(`${base}${path}`);
 
   const [
     seriesRes,
